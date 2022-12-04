@@ -3,9 +3,20 @@
 Created by Håkan Blomqvist
 Part of the book: https://leanpub.com/2ddrawingwithc17usingthestandardlibraryonly
 
-More information TBD
+More information TBD...
 
-# License
+## Clone ppmpp and build test.cpp
+
+```
+git clone https://github.com/chbtoys/ppmpp.git
+cd ppmpp
+clang++ -std=c++20 test.cpp -o test
+./test
+```
+
+NOTE: Uses **-std=c++20** for std::lerp when making bezier quadratic and cubic. Everything else works great with **-std=c++17**.
+
+## License
 
 MIT No Attribution
 
