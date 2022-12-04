@@ -1,5 +1,7 @@
 .DS_Store
 test
+example
+example.ppm
 test2.ppm
 test_copy.ppm
 .gitignore
