@@ -29,11 +29,11 @@ int main()
 	image2.get_angled_line(coords,center,7,300);
 	image2.draw_line(coords,color);
 	// Lerp requires C++20.
-#if __cplusplus >= 202002L
 	ppm::point pt0=std::make_tuple(340,90);
 	ppm::point pt1=std::make_tuple(480,2);
 	ppm::point pt2=std::make_tuple(620,90);
 	ppm::point pt3=std::make_tuple(0,0);
+#if __cplusplus >= 202002L
 	image2.draw_bezier_quadratic(pt0,pt1,pt2,50,color);
 	pt0=std::make_tuple(200,270);
 	pt1=std::make_tuple(293,182);
@@ -61,9 +61,9 @@ int main()
 	image2.draw_wedge(pt,150,0,45,color3);
 	pt=std::make_tuple(800,800);
 	image2.draw_filled_wedge(pt,150,0,45,color5);
-	ppm::point pt1=std::make_tuple(750,450);
-	ppm::point pt2=std::make_tuple(350,650);
-	ppm::point pt3=std::make_tuple(450,750);
+	pt1=std::make_tuple(750,450);
+	pt2=std::make_tuple(350,650);
+	pt3=std::make_tuple(450,750);
 	image2.draw_triangle(pt1,pt2,pt3,color5);
 	pt1=std::make_tuple(750,450);
 	pt2=std::make_tuple(950,750);
