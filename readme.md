@@ -3,7 +3,7 @@
 Draw/read/write PPM P6 images (Portable Pixel Map) without any hassle.
 
 Created by Håkan Blomqvist
-Part of the book: https://leanpub.com/2ddrawingwithc17usingthestandardlibraryonly
+Part of the book: https://leanpub.com/2dcomputergraphicsinmoderncandstandardlibrary/
 
 More information TBD...
 
