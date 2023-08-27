@@ -60,7 +60,6 @@ NOTE: Uses **-std=c++20** for std::lerp when making bezier quadratic and cubic. 
 MIT No Attribution
 
 ppmpp.hpp - A header-only class to draw/read/write 2D graphics using only the standard library.
-Version 1.0 release (3:rd of December 2022).
 Copyright (c) 2022-2023 Håkan Blomqvist
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this
