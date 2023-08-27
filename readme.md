@@ -7,9 +7,11 @@ Part of the book: https://leanpub.com/2dcomputergraphicsinmoderncandstandardlibr
 
 More information TBD...
 
+![ppmpp](https://github.com/chbtoys/ppmpp/blob/main/images/ppmpp.png)
+
 ## Example
 ```
-// Compile: clang++ -std=c++20 example.cpp -o example
+// Compile: clear && clang++ -std=c++20 example.cpp -o example
 
 #include <tuple>
 #include "ppmpp.hpp"
