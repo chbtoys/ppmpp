@@ -63,8 +63,7 @@ ppmpp.hpp - A header-only class to draw/read/write 2D graphics using only the st
 Version 1.0 release (3:rd of December 2022).
 Copyright (c) 2022-2023 Håkan Blomqvist
 
-For more information:
-https://leanpub.com/2ddrawingwithc17usingthestandardlibraryonly
+For more information: https://leanpub.com/2ddrawingwithc17usingthestandardlibraryonly](https://leanpub.com/2dcomputergraphicsinmoderncandstandardlibrary/
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this
 software and associated documentation files (the "Software"), to deal in the Software
