@@ -57,7 +57,7 @@ using **Pixel** = std::tuple<double, double, double>;
 
 using **Coord** = std::tuple<int, int, int, int>;
 
-using **point** = std::tuple<int, int>;
+using **Point** = std::tuple<int, int>;
 
 ### Helper functions
 constexpr float **getFloatColorElement**(uint8_t element)
@@ -151,7 +151,7 @@ friend bool **operator==**(const Image& lhs, const Image& rhs)
 friend bool **operator!=**(const Image& lhs, const Image& rhs)
 
 ### Public methods
-void **resize**(int width, int height) // Resizes the image to the specified width and height.
+void **resize**(int width, int height) _// Resizes the image to the specified width and height._
 
 void **setWidth**(int width) // Sets the width of the image.
 
