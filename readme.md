@@ -54,43 +54,73 @@ clang++ -std=c++20 test.cpp -o test
 
 ### Types
 using **pixel** = std::tuple<double, double, double>;
+
 using **coord** = std::tuple<int, int, int, int>;
+
 using **point** = std::tuple<int, int>;
 
 ### Helper functions
 constexpr float **getFloatColorElement**(uint8_t element)
-constexpr float **getfRedColorElement**(pixel px) 
+
+constexpr float **getfRedColorElement**(pixel px)
+
 constexpr uint8_t **getRedColorElement**(pixel px) 
+
 constexpr float **getfGreenColorElement**(pixel px) 
+
 constexpr uint8_t **getGreenColorElement**(pixel px) 
+
 constexpr float **getfBlueColorElement**(pixel px) 
+
 constexpr uint8_t **getBlueColorElement**(pixel px)
+
 constexpr pixel **createfPixelWithColor**(float r, float g, float b)
+
 constexpr pixel **createPixelWithColor**(uint8_t r, uint8_t g, uint8_t b) 
+
 constexpr pixel **createfGrayPixel**(float v) 
+
 constexpr pixel **createGrayPixel**(uint8_t v)
+
 constexpr coord **createCoord**(int x1, int y1, int x2, int y2) 
+
 constexpr int **getCoordX1**(coord co) 
+
 constexpr int **getCoordX2**(coord co) 
+
 constexpr int **getCoordY1**(coord co) 
+
 constexpr int **getCoordY2**(coord co) 
+
 constexpr point **getFirstPointFromCoord(coord co)** 
+
 constexpr point **getSecondPointFromCoord(coord co)** 
+
 constexpr coord **createCoordFromPoints(point pt1, point pt2)** 
+
 constexpr point **createPoint(int x1, int y1)** 
+
 constexpr int **getPointX1(point pt)** 
+
 constexpr int **getPointY1(point pt)**
 
 void **setRedColorElement**(pixel& px, float r) 
+
 void **setRedColorElement**(pixel& px, uint8_t r) 
+
 void **setGreenColorElement**(pixel& px, float g) 
+
 void **setGreenColorElement**(pixel& px, uint8_t g) 
+
 void **setBlueColorElement**(pixel& px, float b) 
+
 void **setBlueColorElement**(pixel& px, uint8_t b)
 
 ### Helper functions for colors
 pixel **blendColors**(pixel &colorbackground, pixel &colorforeground, float alpha)
+
 void **getHSV**(double& h, double& s, double& v, const pixel& px)
+
 void **setHSV**(double h,double s,double v,pixel& px)
 
 ### Default constructor
