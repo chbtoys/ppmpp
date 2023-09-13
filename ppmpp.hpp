@@ -1,11 +1,11 @@
 // MIT No Attribution
 // 
-// ppmpp.hpp - A header-only class to draw/read/write 2D graphics using only the standard library.
-// Version 1.0 release (3:rd of December 2022).
+// ppmpp2.hpp - A header-only class to draw/read/write 2D graphics using only the standard library.
+// Version 2.0 (13:th of September 2023).
 // Copyright (c) 2022-2023 Håkan Blomqvist
 // 
 // For more information:
-// https://leanpub.com/2ddrawingwithc17usingthestandardlibraryonly
+// https://leanpub.com/2dcomputergraphicsinmoderncandstandardlibrary
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this
 // software and associated documentation files (the "Software"), to deal in the Software
@@ -20,7 +20,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#define _USE_MATH_DEFINES
+#pragma once
 
 #include <iostream>
 #include <fstream>
@@ -29,886 +29,1166 @@
 #include <random>
 #include <cmath>
 #include <algorithm>
+#include <numeric>
 
 namespace ppm
 {
-	// Typedef
-	typedef std::tuple<float, float, float> pixel;
-	typedef std::tuple<int, int, int, int> coord;
-	typedef std::tuple<int, int> point;
+	using Pixel = std::tuple<double, double, double>;
+	using Coord = std::tuple<int, int, int, int>;
+	using Point = std::tuple<int, int>;
 
-	class image
+	// Helper functions
+	constexpr float getFloatColorElement(uint8_t element) { return static_cast<float>(element) / 255.0f; }
+	constexpr float getfRedColorElement(Pixel px) { return std::get<0>(px); }
+	constexpr uint8_t getRedColorElement(Pixel px) { return static_cast<uint8_t>(std::get<0>(px) * 255); }
+	constexpr float getfGreenColorElement(Pixel px) { return std::get<1>(px); }
+	constexpr uint8_t getGreenColorElement(Pixel px) { return static_cast<uint8_t>(std::get<1>(px) * 255); }
+	constexpr float getfBlueColorElement(Pixel px) { return std::get<2>(px); }
+	constexpr uint8_t getBlueColorElement(Pixel px) { return static_cast<uint8_t>(std::get<2>(px) * 255); }
+	constexpr Pixel createfPixelWithColor(float r, float g, float b) { return std::make_tuple(r,g,b); }
+	constexpr Pixel createPixelWithColor(uint8_t r, uint8_t g, uint8_t b) { return std::make_tuple(getFloatColorElement(r), getFloatColorElement(g), getFloatColorElement(b)); }
+	constexpr Pixel createfGrayPixel(float v) { return createfPixelWithColor(v,v,v); }
+	constexpr Pixel createGrayPixel(uint8_t v) { return createPixelWithColor(v,v,v); }
+	constexpr Coord createCoord(int x1, int y1, int x2, int y2) { return std::make_tuple(x1,y1,x2,y2); }
+	constexpr int getCoordX1(Coord co) { return std::get<0>(co); }
+	constexpr int getCoordX2(Coord co) { return std::get<2>(co); }
+	constexpr int getCoordY1(Coord co) { return std::get<1>(co); }
+	constexpr int getCoordY2(Coord co) { return std::get<3>(co); }
+	constexpr Point getFirstPointFromCoord(Coord co) { return std::make_tuple(getCoordX1(co), getCoordY1(co)); }
+	constexpr Point getSecondPointFromCoord(Coord co) { return std::make_tuple(getCoordX2(co), getCoordY2(co)); }
+	constexpr Coord createCoordFromPoints(Point pt1, Point pt2) { return std::make_tuple(std::get<0>(pt1), std::get<1>(pt1), std::get<0>(pt2), std::get<1>(pt2)); }
+	constexpr Point createPoint(int x1, int y1) { return std::make_tuple(x1,y1); }
+	constexpr int getPointX1(Point pt) { return std::get<0>(pt); }
+	constexpr int getPointY1(Point pt) { return std::get<1>(pt); }
+	
+	void setRedColorElement(Pixel& px, float r) {px=std::make_tuple(r,getfGreenColorElement(px),getfBlueColorElement(px));}
+	void setRedColorElement(Pixel& px, uint8_t r) {px=std::make_tuple(getFloatColorElement(r),getfGreenColorElement(px),getfBlueColorElement(px));}
+	void setGreenColorElement(Pixel& px, float g) {px=std::make_tuple(getfRedColorElement(px),g,getfBlueColorElement(px));}
+	void setGreenColorElement(Pixel& px, uint8_t g) {px=std::make_tuple(getfRedColorElement(px),getFloatColorElement(g),getfBlueColorElement(px));}
+	void setBlueColorElement(Pixel& px, float b) {px=std::make_tuple(getfRedColorElement(px),getfGreenColorElement(px),b);}
+	void setBlueColorElement(Pixel& px, uint8_t b) {px=std::make_tuple(getfRedColorElement(px),getfGreenColorElement(px),getFloatColorElement(b));}
+
+	// Helper functions for colors
+	Pixel blendColors(Pixel &colorbackground, Pixel &colorforeground, float alpha) {float r=0.0f; float g=0.0f; float b=0.0f;r = (std::get<0>(colorforeground) * alpha) + (std::get<0>(colorbackground) * (1.0 - alpha));g = (std::get<1>(colorforeground) * alpha) + (std::get<1>(colorbackground) * (1.0 - alpha));b = (std::get<2>(colorforeground) * alpha) + (std::get<2>(colorbackground) * (1.0 - alpha));return createfPixelWithColor(r,g,b);}
+	void getHSV(double& h, double& s, double& v, const Pixel& px) {double r, g, b;std::tie(r, g, b) = px;double min_val = std::min({r, g, b});double max_val = std::max({r, g, b});double delta = max_val - min_val;v = max_val;if (max_val != 0.0) {s = delta / max_val;} else {s = 0.0;h = -1.0;return;}if (r == max_val) {h = (g - b) / delta;} else if (g == max_val) {h = 2.0 + (b - r) / delta;} else {h = 4.0 + (r - g) / delta;}h *= 60.0;if (h < 0) {h += 360.0;}h /= 360.0;}
+	void setHSV(double h,double s,double v,Pixel& px) {if (s == 0) {px = {v, v, v};return;}h *= 360.0;h = std::fmod(h, 360.0);h /= 60.0;int i = std::floor(h);double f = h - i;double p = v * (1.0 - s);double q = v * (1.0 - s * f);double t = v * (1.0 - s * (1.0 - f));switch (i) {case 0:px = {v, t, p};break;case 1:px = {q, v, p};break;case 2:px = {p, v, t};break;case 3:px = {p, q, v};break;case 4:px = {t, p, v};break;default:px = {v, p, q};break;}}
+
+	class Image
 	{
 	public:
-		// Constructs an empty image.
-		image() {}
+		Image() {}
 
-		// Constructs an empty image of specified width and height.
-		image(int width, int height) {resize(width, height);}
-
-		// Constructs an image reading data from specified file
-		explicit image(std::string const& filename)
-		{
+		Image(int width, int height) {
+			resize(width, height);
+		}
+		
+		explicit Image(std::string const& filename) {
 			read(filename);
 		}
+        Image(const Image& other) : m_img(other.m_img), m_width(other.m_width), m_height(other.m_height) {}
+        
+        Image& operator=(const Image& other) {if (this == &other) return *this;m_img = other.m_img;m_width = other.m_width;m_height = other.m_height;return *this;}
+        
+        Image(Image&& other) noexcept : m_img(std::move(other.m_img)), m_width(other.m_width), m_height(other.m_height) {other.m_width = 0;other.m_height = 0;}
+        
+        Image& operator=(Image&& other) noexcept {
+        	if (this == &other) return *this;
+        	m_img = std::move(other.m_img);
+        	m_width = other.m_width;
+        	m_height = other.m_height;
+        	other.m_width = 0;
+        	other.m_height = 0;
+        	return *this;
+        }
 
-		// Resizes the image pixel buffer.
-		void resize(int width, int height)
-		{
-			m_img.clear();
-			m_img.resize(width*height);
-			set_width(width);
-			set_height(height);
+        friend bool operator==(const Image& lhs, const Image& rhs)
+        {
+            // Compare the dimensions
+            if (lhs.m_width != rhs.m_width || lhs.m_height != rhs.m_height)
+            {
+                return false;
+            }
+            
+            // Compare the pixel data
+            return lhs.m_img == rhs.m_img;
+        }
+
+        friend bool operator!=(const Image& lhs, const Image& rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        void resize(int width, int height) {
+        	m_img.clear();
+        	m_img.resize(width*height);
+        	setWidth(width);
+        	setHeight(height);
+        }
+		
+		void setWidth(int width) { 
+			m_width = width; 
 		}
-
-		void set_width(int width)
-		{
-			m_width=width;
+		
+		void setHeight(int height) { 
+			m_height = height; 
 		}
-
-		void set_height(int height)
-		{
-			m_height=height;
+		
+		int getWidth() { 
+			return m_width; 
 		}
-
-		int get_width()
-		{
-			return m_width;
+        
+        int getHeight() { 
+        	return m_height; 
+        }
+		
+		void setPixel(int xCoord, int yCoord, const Pixel& newPixel) { 
+			if (xCoord >= 0 && xCoord < m_width && yCoord >= 0 && yCoord < m_height) { 
+				m_img[getIndex(xCoord, yCoord)] = newPixel; 
+			}
 		}
-
-		int get_height()
-		{
-			return m_height;
+		
+		const Pixel& getPixel(int xCoord, int yCoord) { 
+			return m_img[xCoord + m_width * yCoord]; 
 		}
-
-		void set_pixel(int x, int y, pixel px)
-		{
-			m_img[x+m_width*y]=px;
-		}
-
-		pixel get_pixel(int x, int y)
-		{
-			return m_img[x+m_width*y];
-		}
-
-		void set_all_pixels(pixel px)
-		{
-			for (int y=0;y<m_height;++y)
-			{
-				for (int x=0;x<m_width;++x)
-				{
-					m_img[x+m_width*y]=px;
+		
+		void setAllPixels(const Pixel& newPixel) {
+			for(int y = 0; y < m_height; ++y) {
+				for(int x = 0; x < m_width; ++x) {
+					setPixel(x,y,newPixel);
 				}
 			}
 		}
-
-		// Drawline
-		void draw_line(coord &coords, pixel &linecolor)
-		{
-			coord coords2;
-			if (clipline(coords,coords2)) {
-				drawline(coords2,linecolor);
-			}
-		}
-
-		// Get angled line
-		void get_angled_line(coord &coords, point &center, double degrees, int length)
-		{
-			double angle = degrees * (M_PI / 180);
-			coords=std::make_tuple(std::get<0>(center),std::get<1>(center),int(double(std::get<0>(center)) + cos(angle)*double(length)),int(double(std::get<1>(center)) + sin(angle)*double(length)));
-		}
-
-		// Draw Curves (requires C++20)
-#if __cplusplus >= 202002L
-		void draw_bezier_quadratic(point pt0, point pt1, point pt2, int split, pixel beziercolor)
-		{
-			std::vector<std::tuple<int,int>> xy;
-			quadraticbeziercurves(pt0,pt1,pt2,split,xy);
-			// drawxydots(xy,beziercolor);
-			drawxyline(xy,beziercolor,pt2);
-		}
-
-		void draw_bezier_cubic(point pt0, point pt1, point pt2, point pt3, int split, pixel beziercolor)
-		{
-			std::vector<std::tuple<int,int>> xy;
-			cubicbeziercurves(pt0,pt1,pt2,pt3,split,xy);
-			drawxyline(xy,beziercolor,pt3);
-		}
-#endif
-
-		// Draw rectangles
-		void draw_rectangle(point &xy, point &wh, pixel &rectanglecolor)
-		{
-			drawrect(xy,wh,rectanglecolor);
-		}
-
-		void draw_filled_rectangle(point &xy, point &wh, pixel &rectanglecolor)
-		{
-			drawfilledrect(xy,wh,rectanglecolor);
-		}
-
-		// Draw Circles
-		void draw_circle(point &xy, int radius, pixel &circlecolor)
-		{
-			drawcircle(xy,radius,circlecolor);
-		}
-
-		void draw_filled_circle(point &xy, int radius, pixel &circlecolor)
-		{
-			drawfilledcircle(xy,radius,circlecolor);
-		}
-
-		// Draw Wedge
-		void draw_wedge(point center,int radius,int start_angle,int end_angle,pixel &wedgecolor)
-		{
-			drawwedge(center,radius,start_angle,end_angle,wedgecolor);
-		}
-
-		void draw_filled_wedge(point center,int radius,int start_angle,int end_angle,pixel &wedgecolor)
-		{
-			drawfilledwedge(center,radius,start_angle,end_angle,wedgecolor);
-		}
-
-		// Draw Triangles
-		void draw_triangle(point pt1, point pt2, point pt3, pixel &trianglecolor)
-		{
-			drawtriangle(pt1,pt2,pt3,trianglecolor);
-		}
-
-		void draw_filled_triangle(point pt1,point pt2,point pt3,pixel &color)
-		{
-			drawfilledtriangle(pt1,pt2,pt3,color);
-		}
-
-		// Blend Colors
-		pixel blend_colors(pixel &colorbackground, pixel &colorforeground, float alpha)
-		{
-			float r=0.0f; float g=0.0f; float b=0.0f;
-			r = (std::get<0>(colorforeground) * alpha) + (std::get<0>(colorbackground) * (1.0 - alpha));
-			g = (std::get<1>(colorforeground) * alpha) + (std::get<1>(colorbackground) * (1.0 - alpha));
-			b = (std::get<2>(colorforeground) * alpha) + (std::get<2>(colorbackground) * (1.0 - alpha));
 		
-			return std::make_tuple(r,g,b);
+		void drawLine(Coord& startCoords, const Pixel& lineColor) {
+			Coord clippedCoords;
+			if (clipLineImpl(startCoords, clippedCoords)) {drawLineImpl(clippedCoords, lineColor);}
+		}
+		
+		void getAngledLine(Coord& lineCoords, const Point& center, double degrees, int length) {
+			double angleRad = degrees * (M_PI / 180.0);
+			int xStart = std::get<0>(center);
+			int yStart = std::get<1>(center);
+			int xEnd = static_cast<int>(static_cast<double>(xStart) + std::cos(angleRad) * static_cast<double>(length));
+			int yEnd = static_cast<int>(static_cast<double>(yStart) + std::sin(angleRad) * static_cast<double>(length));
+			lineCoords = std::make_tuple(xStart, yStart, xEnd, yEnd);
+		}
+		
+		void drawBezierQuadratic(const Point& pt0, const Point& pt1, const Point& pt2, int split, const Pixel& bezierColor) {
+			std::vector<std::tuple<int, int>> xyCoordinates;
+			quadraticBezierCurvesImpl(pt0, pt1, pt2, split, xyCoordinates);
+			drawXyLineImpl(xyCoordinates, bezierColor, pt2);
+		}
+		
+		void drawBezierCubic(const Point& pt0, const Point& pt1, const Point& pt2, const Point& pt3, int split, const Pixel& bezierColor) {
+			std::vector<std::tuple<int, int>> xyCoordinates;
+			cubicBezierCurvesImpl(pt0, pt1, pt2, pt3, split, xyCoordinates);
+			drawXyLineImpl(xyCoordinates, bezierColor, pt3);
 		}
 
-		// Read PPM Image
-		void read(std::string const& filename)
-		{
-			std::string magic;
-			int max;
-			uint8_t buffer[3];
-			pixel color;
+		void drawRectangle(const Point& xy, const Point& wh, const Pixel& rectangleColor) {
+        	drawRectImpl(xy, wh, rectangleColor);
+    	}
 
-			std::ifstream in(filename, std::ifstream::binary);
+		void drawFilledRectangle(const Point& xy, const Point& wh, const Pixel& rectangleColor) {
+	        drawFilledRectImpl(xy, wh, rectangleColor);
+	    }
 
-			if (!in.is_open()) 
-			{
-				std::cout << "Can't open " << filename << std::endl;
-				exit(1);
-			}
+		void drawCircle(const Point& xy, int radius, const Pixel& circleColor) {
+	        drawCircleImpl(xy, radius, circleColor);
+	    }
 
-			in >> magic;
-			in.seekg(1, in.cur);
-			char c;
-			in.get(c);
-			if (c == '#')
-			{
-				// We got comments in the PPM image and skip the comments
-				while (c != '\n')
-				{
-					in.get(c);
-				}
-			}
-			else
-			{
-				in.seekg(-1, in.cur);
-			}
+		void drawFilledCircle(const Point& xy, int radius, const Pixel& circleColor) {
+	        drawFilledCircleImpl(xy, radius, circleColor);
+	    }
 
-			in >> m_width >> m_height >> max;
+		void drawWedge(const Point& center, int radius, int startAngle, int endAngle, const Pixel& wedgeColor) {
+	        drawWedgeImpl(center, radius, startAngle, endAngle, wedgeColor);
+	    }
 
-			if (max != 255) {
-				std::cout << "Not 8 bit per rgb color." << std::endl;
-				exit(1);
-			}
+		void drawFilledWedge(const Point& center, int radius, int startAngle, int endAngle, const Pixel& wedgeColor) {
+	        drawFilledWedgeImpl(center, radius, startAngle, endAngle, wedgeColor);
+	    }
 
-			if (magic == "P6")
-			{
-				// Move curser once to skip '\n'
-				in.seekg(1, in.cur);
+		void drawTriangle(const Point& pt1, const Point& pt2, const Point& pt3, const Pixel& triangleColor) {
+	        drawTriangleImpl(pt1, pt2, pt3, triangleColor);
+	    }
 
-				m_img.clear();
+		void drawFilledTriangle(const Point& pt1, const Point& pt2, const Point& pt3, const Pixel& fillColor) {
+	        drawFilledTriangleImpl(pt1, pt2, pt3, fillColor);
+	    }
 
-				for (int i = 0; i < m_width * m_height; ++i)
-				{
-					in.read(reinterpret_cast<char *>(buffer), 3);
-					color=std::make_tuple(float(float(buffer[0])/255.0),float(float(buffer[1])/255.0),float(float(buffer[2])/255.0));
-					m_img.push_back(color);
-				}
-			} else {
-				std::cout << filename << " is not a P6 file." << std::endl;
-				exit(1);
-			}
+		void drawRotatedRectangle(int x, int y, int w, int h, double angle, const Pixel& px) {
+	        drawRotatedRectangleImpl(x, y, w, h, angle, px);
+	    }
 
-			in.close();
+		void drawFilledRotatedRectangle(int x, int y, int w, int h, double angle, const Pixel& px) {
+	        drawFilledRotatedRectangleImpl(x, y, w, h, angle, px);
+	    }
+
+		void drawRotatedEllipse(int x, int y, int w, int h, double angle, const Pixel& px) {
+	        drawRotatedEllipseImpl(x, y, w, h, angle, px);
+	    }
+
+		void drawFilledRotatedEllipse(int x, int y, int w, int h, double angle, const Pixel& px) {
+	        drawFilledRotatedEllipseImpl(x, y, w, h, angle, px);
+	    }
+
+		void drawRotatedPolygon(const std::vector<Point>& vertices, double angle, const Pixel& px) {
+	        drawRotatedPolygonImpl(vertices, angle, px);
+	    }
+
+		void drawFilledRotatedPolygon(const std::vector<Point>& vertices, double angle, const Pixel& px) {
+	        drawFilledRotatedPolygonImpl(vertices, angle, px);
+	    }
+
+		Pixel getAverageRgbOfImage() {
+			double rSum = 0.0;
+			double gSum = 0.0;
+			double bSum = 0.0;
+			double totalPixels = m_img.size();
+			for (const auto& px : m_img) {
+				rSum += std::get<0>(px);
+				gSum += std::get<1>(px);
+				bSum += std::get<2>(px);
+			} 
+			return createfPixelWithColor(rSum / totalPixels, gSum / totalPixels, bSum / totalPixels);
 		}
 
-		// Write PPM image.
-		void write(std::string const& filename)
-		{
-			pixel color;
-			std::ofstream out(filename, std::ios_base::out | std::ios_base::binary);
-			out << "P6" << std::endl << m_width << ' ' << m_height << std::endl << "255" << std::endl;
+		void convertToGrayscale() {
+	        convertToGrayscaleImpl();
+	    }
 
-			for (int i=0;i<(m_width*m_height);++i)
-			{
-				color=m_img[i];
-				out << char(std::get<0>(color)*255.0f) << char(std::get<1>(color)*255.0f) << char(std::get<2>(color)*255.0f);
-			}
-			out.close();
+		void applyGaussianBlur() {
+	        applyGaussianBlurImpl();
+	    }
+
+		void drawGradients(const std::vector<Pixel>& colors, double angle_degree) {
+			drawGradientsImpl(colors, angle_degree);
+		}
+		
+		void read(const std::string& filename) {
+			readImpl(filename);
 		}
 
-	protected:
-		int getindex(int x, int y)
-		{
-			return x+m_width*y;
+		void write(const std::string& filename) {
+			writeImpl(filename);
+		}
+	private:
+		int getIndex(int x, int y) {
+	        return y * m_width + x;
+	    }
+
+		void drawLineImpl(const Coord& Coords, const Pixel& lineColor) {
+	        int x1 = std::get<0>(Coords);
+	        int y1 = std::get<1>(Coords);
+	        int x2 = std::get<2>(Coords);
+	        int y2 = std::get<3>(Coords);
+	        
+	        int dx = x2 - x1;
+	        int dy = y2 - y1;
+	        int dx1 = std::abs(dx);
+	        int dy1 = std::abs(dy);
+	        int px = 2 * dy1 - dx1;
+	        int py = 2 * dx1 - dy1;
+	        int x, y, xe, ye;
+
+	        if (dx1 >= dy1) {
+	            if (dx >= 0) { x = x1; y = y1; xe = x2; }
+	            else { x = x2; y = y2; xe = x1; }
+
+	            setPixel(x,y,lineColor);
+
+	            for (int i = 0; x < xe; i++) {
+	                x = x + 1;
+	                if (px < 0) {
+	                    px = px + 2 * dy1;
+	                } else {
+	                    if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) y = y + 1;
+	                    else y = y - 1;
+	                    px = px + 2 * (dy1 - dx1);
+	                }
+	                setPixel(x,y,lineColor);
+	            }
+	        } else {
+	            if (dy >= 0) { x = x1; y = y1; ye = y2; }
+	            else { x = x2; y = y2; ye = y1; }
+
+	            setPixel(x,y,lineColor);
+
+	            for (int i = 0; y < ye; i++) {
+	                y = y + 1;
+	                if (py <= 0) {
+	                    py = py + 2 * dx1;
+	                } else {
+	                    if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) x = x + 1;
+	                    else x = x - 1;
+	                    py = py + 2 * (dx1 - dy1);
+	                }
+	                setPixel(x,y,lineColor);
+	            }
+	        }
+	    }
+		
+		int findRegion(int x, int y) {
+	        int code = 0;
+
+	        if (y >= m_height) {
+	            code |= 1;
+	        } else if (y < 0) {
+	            code |= 2;
+	        }
+
+	        if (x >= m_width) {
+	            code |= 4;
+	        } else if (x < 0) {
+	            code |= 8;
+	        }
+
+	        return code;
+	    }
+
+		bool clipLineImpl(const Coord& startCoords, Coord& clippedCoords) {
+	        int x1 = std::get<0>(startCoords);
+	        int y1 = std::get<1>(startCoords);
+	        int x2 = std::get<2>(startCoords);
+	        int y2 = std::get<3>(startCoords);
+
+	        int x3 = 0, y3 = 0, x4 = 0, y4 = 0;
+	        int code1 = 0, code2 = 0, codeout = 0;
+
+	        bool accept = false, done = false;
+	        code1 = findRegion(x1, y1);
+	        code2 = findRegion(x2, y2);
+
+	        do {
+	            if (!(code1 | code2)) {
+	                accept = done = true;
+	            } else if (code1 & code2) {
+	                done = true;
+	            } else {
+	                int x, y;
+	                codeout = code1 ? code1 : code2;
+
+	                if (codeout & 1) { // top edge
+	                    x = x1 + (x2 - x1) * (m_height - y1) / (y2 - y1);
+	                    y = m_height - 1;
+	                } else if (codeout & 2) { // bottom edge
+	                    x = x1 + (x2 - x1) * -y1 / (y2 - y1);
+	                    y = 0;
+	                } else if (codeout & 4) { // right edge
+	                    y = y1 + (y2 - y1) * (m_width - x1) / (x2 - x1);
+	                    x = m_width - 1;
+	                } else { // left edge
+	                    y = y1 + (y2 - y1) * -x1 / (x2 - x1);
+	                    x = 0;
+	                }
+
+	                if (codeout == code1) {
+	                    x1 = x;
+	                    y1 = y;
+	                    code1 = findRegion(x1, y1);
+	                } else {
+	                    x2 = x;
+	                    y2 = y;
+	                    code2 = findRegion(x2, y2);
+	                }
+	            }
+	        } while (!done);
+
+	        if (accept) {
+	            clippedCoords = std::make_tuple(x1, y1, x2, y2);
+	            return true;
+	        } else {
+	            clippedCoords = std::make_tuple(0, 0, 0, 0);
+	            return false;
+	        }
+	    }
+		
+		void quadraticBezierCurvesImpl(const Point& pt0, const Point& pt1, const Point& pt2, int split, std::vector<Point>& xyCoordinates) {
+	        double t = 0.0;
+	        double delta = double(1) / double(split);
+
+	        int x = 0;
+	        int y = 0;
+	        int x1 = 0;
+	        int y1 = 0;
+	        int x2 = 0;
+	        int y2 = 0;
+
+	        for (int i = 0; i < split; ++i) {
+	            x1 = std::lerp(std::get<0>(pt0), std::get<0>(pt1), t);
+	            y1 = std::lerp(std::get<1>(pt0), std::get<1>(pt1), t);
+
+	            x2 = std::lerp(std::get<0>(pt1), std::get<0>(pt2), t);
+	            y2 = std::lerp(std::get<1>(pt1), std::get<1>(pt2), t);
+
+	            x = std::lerp(x1, x2, t);
+	            y = std::lerp(y1, y2, t);
+
+	            xyCoordinates.push_back(std::make_tuple(x, y));
+
+	            t += delta;
+	        }
+	    }
+
+		void cubicBezierCurvesImpl(const Point& pt0, const Point& pt1, const Point& pt2, const Point& pt3, int split, std::vector<Point>& xyCoordinates) {
+		    double t = 0.0;
+		    double delta = 1.0 / static_cast<double>(split);
+
+		    for (int i = 0; i < split; ++i) {
+		        auto [x0, y0] = pt0;
+		        auto [x1, y1] = pt1;
+		        auto [x2, y2] = pt2;
+		        auto [x3, y3] = pt3;
+
+		        int xA = std::lerp(x0, x1, t);
+		        int yA = std::lerp(y0, y1, t);
+		        int xB = std::lerp(x1, x2, t);
+		        int yB = std::lerp(y1, y2, t);
+		        int xC = std::lerp(x2, x3, t);
+		        int yC = std::lerp(y2, y3, t);
+
+		        int xAA = std::lerp(xA, xB, t);
+		        int yAA = std::lerp(yA, yB, t);
+		        int xBB = std::lerp(xB, xC, t);
+		        int yBB = std::lerp(yB, yC, t);
+
+		        int xFinal = std::lerp(xAA, xBB, t);
+		        int yFinal = std::lerp(yAA, yBB, t);
+
+		        xyCoordinates.push_back(std::make_tuple(xFinal, yFinal));
+		        t += delta;
+		    }
 		}
 
-		void drawline(coord &coords, pixel &color)
-		{
-			int x1=std::get<0>(coords); int y1=std::get<1>(coords); int x2=std::get<2>(coords); int y2=std::get<3>(coords);
-			int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
-			dx = x2 - x1; dy = y2 - y1;
-			if (dx == 0)
-			{
-				if (y2 < y1) std::swap(y1, y2);
-				for (y = y1; y <= y2; y++)
-					m_img[getindex(x1,y)]=color;
-				return;
-			}
-			if (dy == 0)
-			{
-				if (x2 < x1) std::swap(x1, x2);
-				for (x = x1; x <= x2; x++)
-					m_img[getindex(x,y1)]=color;
-				return;
-			}
-			dx1 = abs(dx); dy1 = abs(dy);
-			px = 2 * dy1 - dx1;	py = 2 * dx1 - dy1;
-			if (dy1 <= dx1)
-			{
-				if (dx >= 0)
-				{
-					x = x1; y = y1; xe = x2;
-				}
-				else
-				{
-					x = x2; y = y2; xe = x1;
-				}
-				m_img[getindex(x,y)]=color;
-				for (i = 0; x<xe; i++)
-				{
-					x = x + 1;
-					if (px<0)
-						px = px + 2 * dy1;
-					else
-					{
-						if ((dx<0 && dy<0) || (dx>0 && dy>0)) y = y + 1; else y = y - 1;
-						px = px + 2 * (dy1 - dx1);
-					}
-					m_img[getindex(x,y)]=color;
-				}
-			}
-			else
-			{
-				if (dy >= 0)
-				{
-					x = x1; y = y1; ye = y2;
-				}
-				else
-				{
-					x = x2; y = y2; ye = y1;
-				}
-				m_img[getindex(x,y)]=color;
-				for (i = 0; y<ye; i++)
-				{
-					y = y + 1;
-					if (py <= 0)
-						py = py + 2 * dx1;
-					else
-					{
-						if ((dx<0 && dy<0) || (dx>0 && dy>0)) x = x + 1; else x = x - 1;
-						py = py + 2 * (dx1 - dy1);
-					}
-					m_img[getindex(x,y)]=color;
-				}
-			}
+		void drawXyLineImpl(const std::vector<Point>& xyCoordinates, const Pixel& bezierColor, const Point& pt2) {
+		    Point temp = xyCoordinates.front();
+		    Point store = pt2;
+
+		    std::vector<Point> updatedXyCoordinates = xyCoordinates;
+		    updatedXyCoordinates.push_back(store);
+
+		    std::vector<Coord> lineSegments;
+
+		    for (size_t i = 1; i < updatedXyCoordinates.size(); ++i) {
+		        store = updatedXyCoordinates[i];
+
+		        auto [xTemp, yTemp] = temp;
+		        auto [xStore, yStore] = store;
+
+		        lineSegments.push_back(std::make_tuple(xTemp, yTemp, xStore, yStore));
+		        temp = store;
+		    }
+
+		    for (auto& line : lineSegments) {
+		        drawLine(line, bezierColor);
+		    }
 		}
 
-		int findregion(int x, int y, int width, int height)
-		{
-			int code=0;
-			if(y >= height)
-			code |= 1; //top
-			else if(y < 0)
-			code |= 2; //bottom
-			if(x >= width)
-			code |= 4; //right
-			else if (x < 0)
-			code |= 8; //left
-			return(code);
+		void drawXyDotsImpl(const std::vector<Point>& xy, const Pixel& color) {
+		    for (const auto& pt : xy) {
+		        auto [x, y] = pt;
+		        m_img[getIndex(x, y)] = color;
+		    }
+		}
+		
+		void drawRectImpl(const Point& topLeft, const Point& dimensions, const Pixel& rectangleColor) {
+		    auto [x, y] = topLeft;
+		    auto [w, h] = dimensions;
+
+		    Coord lineCoords;
+		    lineCoords = std::make_tuple(x, y, x + w, y);
+		    drawLine(lineCoords, rectangleColor);
+		    lineCoords = std::make_tuple(x + w, y, x + w, y + h);
+		    drawLine(lineCoords, rectangleColor);
+		    lineCoords = std::make_tuple(x + w, y + h, x, y + h);
+		    drawLine(lineCoords, rectangleColor);
+		    lineCoords = std::make_tuple(x, y + h, x, y);
+		    drawLine(lineCoords, rectangleColor);
 		}
 
-		bool clipline(coord &coords1, coord &coords2)
-		{
-			int x1=std::get<0>(coords1); int y1=std::get<1>(coords1); int x2=std::get<2>(coords1); int y2=std::get<3>(coords1);
-			int x3=0; int y3=0; int x4=0; int y4=0;
-			int code1=0, code2=0, codeout=0;
-			bool accept = 0, done=0;
-			code1 = findregion(x1, y1, m_width, m_height); //the region outcodes for the endpoints
-			code2 = findregion(x2, y2, m_width, m_height);
-			do //In theory, this can never end up in an infinite loop, it'll always come in one of the trivial cases eventually
-			{
-				if(!(code1 | code2)) accept = done = 1;  //accept because both endpoints are in screen or on the border, trivial accept
-				else if(code1 & code2) done = 1; //the line isn't visible on screen, trivial reject
-				else  //if no trivial reject or accept, continue the loop
-				{
-					int x, y;
-					codeout = code1 ? code1 : code2;
-					if(codeout & 1) //top
-					{
-						x = x1 + (x2 - x1) * (m_height - y1) / (y2 - y1);
-						y = m_height - 1;
-					}
-					else if(codeout & 2) //bottom
-					{
-						x = x1 + (x2 - x1) * -y1 / (y2 - y1);
-						y = 0;
-					}
-					else if(codeout & 4) //right
-					{
-						y = y1 + (y2 - y1) * (m_width - x1) / (x2 - x1);
-						x = m_width - 1;
-					}
-					else //left
-					{
-						y = y1 + (y2 - y1) * -x1 / (x2 - x1);
-						x = 0;
-					}
-					if(codeout == code1) //first endpoint was clipped
-					{
-						x1 = x; y1 = y;
-						code1 = findregion(x1, y1, m_width, m_height);
-					}
-					else //second endpoint was clipped
-					{
-						x2 = x; y2 = y;
-						code2 = findregion(x2, y2, m_width, m_height);
-					}
-				}
-			}
-			while(done == 0);
-			if(accept)
-			{
-				x3 = x1;
-				x4 = x2;
-				y3 = y1;
-				y4 = y2;
-				coords2=std::make_tuple(x3,y3,x4,y4);
-				return 1;
-			}
-			else
-			{
-				x3 = x4 = y3 = y4 = 0;
-				coords2=std::make_tuple(x3,y3,x4,y4);
-				return 0;
-			}
+		void drawFilledRectImpl(const Point& topLeft, const Point& dimensions, const Pixel& rectangleColor) {
+		    auto [x, y] = topLeft;
+		    auto [w, h] = dimensions;
+
+		    int x2 = x + w;
+		    int y2 = y + h;
+
+		    Coord lineCoords;
+
+		    for (int i = y; i < y2; ++i) {
+		        lineCoords = std::make_tuple(x, i, x2, i);
+		        drawLine(lineCoords, rectangleColor);
+		    }
 		}
 
-#if __cplusplus >= 202002L
-		void quadraticbeziercurves(point pt0, point pt1, point pt2, int split, std::vector<std::tuple<int,int>>& xy)
-		{
-			double t=0.0;
-			double delta=(double(1)/double(split));
-			int x=0;
-			int y=0;
-			int x1=0;
-			int y1=0;
-			int x2=0;
-			int y2=0;
-			for (int i=0;i<split;++i)
-			{
-				x1 = std::lerp(std::get<0>(pt0),std::get<0>(pt1),t);
-				y1 = std::lerp(std::get<1>(pt0),std::get<1>(pt1),t);
-				x2 = std::lerp(std::get<0>(pt1),std::get<0>(pt2),t);
-				y2 = std::lerp(std::get<1>(pt1),std::get<1>(pt2),t);
-				x = std::lerp(x1,x2,t);
-				y = std::lerp(y1,y2,t);
-				xy.push_back(std::make_tuple(x,y));
-				t+=delta;
-			}
+		void drawCircleImpl(const Point& center, int radius, const Pixel& circleColor) {
+		    if (radius == 0) return;
+
+		    auto [centerX, centerY] = center;
+
+		    int x0 = 0;
+		    int y0 = radius;
+		    int d = 3 - 2 * radius;
+
+		    Coord lineCoords;
+
+		    while (y0 >= x0) {
+		        for (int i = 0; i < 8; ++i) {
+		            int xx, yy;
+
+		            switch (i) {
+		                case 0: xx = centerX + x0; yy = centerY - y0; break;
+		                case 1: xx = centerX + y0; yy = centerY - x0; break;
+		                case 2: xx = centerX + y0; yy = centerY + x0; break;
+		                case 3: xx = centerX + x0; yy = centerY + y0; break;
+		                case 4: xx = centerX - x0; yy = centerY + y0; break;
+		                case 5: xx = centerX - y0; yy = centerY + x0; break;
+		                case 6: xx = centerX - y0; yy = centerY - x0; break;
+		                case 7: xx = centerX - x0; yy = centerY - y0; break;
+		            }
+
+		            lineCoords = std::make_tuple(xx, yy, xx, yy);
+		            drawLine(lineCoords, circleColor);
+		        }
+
+		        if (d < 0) {
+		            d += 4 * x0++ + 6;
+		        } else {
+		            d += 4 * (x0++ - y0--) + 10;
+		        }
+		    }
 		}
 
-		void cubicbeziercurves(point pt0, point pt1, point pt2, point pt3, int split, std::vector<std::tuple<int,int>>& xy)
-		{
-			float t=0.0;
-			float delta=(float(1)/float(split));
-			int x=0;
-			int y=0;
-			int x1=0;
-			int y1=0;
-			int x2=0;
-			int y2=0;
-			int x3=0;
-			int y3=0;
-			int x4=0;
-			int y4=0;
-			int xx1=0;
-			int yy1=0;
-			int xx2=0;
-			int yy2=0;
-			for (int i=0;i<split;++i)
-			{
-				x1 = std::lerp(std::get<0>(pt0),std::get<0>(pt1),t);
-				y1 = std::lerp(std::get<1>(pt0),std::get<1>(pt1),t);
-				x2 = std::lerp(std::get<0>(pt1),std::get<0>(pt2),t);
-				y2 = std::lerp(std::get<1>(pt1),std::get<1>(pt2),t);
-		
-				x3 = std::lerp(std::get<0>(pt1),std::get<0>(pt2),t);
-				y3 = std::lerp(std::get<1>(pt1),std::get<1>(pt2),t);
-				x4 = std::lerp(std::get<0>(pt2),std::get<0>(pt3),t);
-				y4 = std::lerp(std::get<1>(pt2),std::get<1>(pt3),t);
-		
-				xx1 = std::lerp(x1,x2,t);
-				yy1 = std::lerp(y1,y2,t);
-				xx2 = std::lerp(x3,x4,t);
-				yy2 = std::lerp(y3,y4,t);
-		
-				x = std::lerp(xx1,xx2,t);
-				y = std::lerp(yy1,yy2,t);
-				xy.push_back(std::make_tuple(x,y));
-				t+=delta;
-			}
-		}
-#endif
+		void drawFilledCircleImpl(const Point& xy, int radius, const Pixel& circleColor) {
+		    if (radius == 0) {
+		        return;
+		    }
 
-		void drawxyline(std::vector<point> &xy, pixel &color, point stop)
-		{
-			point temp=xy[0];
-			point store;
-			store=std::make_tuple(std::get<0>(stop),std::get<1>(stop));
-			xy.push_back(store);
-			std::vector<coord> xyxy;
-			for (int i=1;i<xy.size();++i)
-			{
-				store=xy[i];
-				xyxy.push_back(std::make_tuple(std::get<0>(temp),std::get<1>(temp),std::get<0>(store),std::get<1>(store)));
-				temp=xy[i];
-			}
-		
-			for (auto& li : xyxy)
-			{
-				draw_line(li,color);
-			}
+		    auto [x, y] = xy;
+		    int x0 = 0;
+		    int y0 = radius;
+		    int d = 3 - 2 * radius;
+
+		    while (y0 >= x0) {
+		        Coord upperLeft  = {x - x0, y - y0, x + x0, y - y0};
+		        Coord upperRight = {x - y0, y - x0, x + y0, y - x0};
+		        Coord lowerLeft  = {x - x0, y + y0, x + x0, y + y0};
+		        Coord lowerRight = {x - y0, y + x0, x + y0, y + x0};
+
+		        drawLine(upperLeft,  circleColor);
+		        drawLine(upperRight, circleColor);
+		        drawLine(lowerLeft,  circleColor);
+		        drawLine(lowerRight, circleColor);
+
+		        if (d < 0) {
+		            d += 4 * x0++ + 6;
+		        } else {
+		            d += 4 * (x0++ - y0--) + 10;
+		        }
+		    }
 		}
 
-		void drawxydots(std::vector<point> &xy, pixel &color)
-		{
-			for (auto& pt : xy)
-			{
-				m_img[getindex(std::get<0>(pt),std::get<1>(pt))]=color;
-			}
+		void drawWedgeImpl(const Point& center, int radius, int startAngle, int endAngle, const Pixel& wedgeColor) {
+		    std::vector<Point> Coords;
+		    const float pi = 3.14159265358979323846;
+
+		    auto [centerX, centerY] = center;
+
+		    float angle = std::min(startAngle, endAngle) * (pi / 180.0);
+		    float range = std::max(startAngle, endAngle) * (pi / 180.0);
+
+		    float x = radius * std::cos(angle);
+		    float y = radius * std::sin(angle);
+
+		    do {
+		        Coords.emplace_back(static_cast<int>(centerX + x + 0.5), static_cast<int>(centerY - y + 0.5));
+		        angle += 0.001;
+		        x = radius * std::cos(angle);
+		        y = radius * std::sin(angle);
+		    } while (angle <= range);
+
+		    auto Coord1 = Coords.front();
+		    auto Coord2 = Coords.back();
+
+		    Coord line1 = {centerX, centerY, std::get<0>(Coord1), std::get<1>(Coord1)};
+		    Coord line2 = {centerX, centerY, std::get<0>(Coord2), std::get<1>(Coord2)};
+
+		    getLineCoords(line1, Coords);
+		    getLineCoords(line2, Coords);
+
+		    for (const auto& [x, y] : Coords) {
+		        Coord singlePointLine = {x, y, x, y};
+		        drawLine(singlePointLine, wedgeColor);
+		    }
 		}
 
-		void drawrect(point &xy, point &wh, pixel &color)
-		{
-			int x=std::get<0>(xy);int y=std::get<1>(xy);int w=std::get<0>(wh);int h=std::get<1>(wh);
-			coord coords=std::make_tuple(x, y, x+w, y);
-			draw_line(coords, color);
-			coords=std::make_tuple(x+w, y, x+w, y+h);
-			draw_line(coords, color);
-			coords=std::make_tuple(x+w, y+h, x, y+h);
-			draw_line(coords, color);
-			coords=std::make_tuple(x, y+h, x, y);
-			draw_line(coords, color);
+		void drawFilledWedgeImpl(const Point& center, int radius, int startAngle, int endAngle, const Pixel& wedgeColor) {
+		    std::vector<Point> Coords;
+		    const float pi = 3.14159265358979323846;
+
+		    auto [centerX, centerY] = center;
+
+		    float angle = std::min(startAngle, endAngle) * (pi / 180.0);
+		    float range = std::max(startAngle, endAngle) * (pi / 180.0);
+
+		    float x = radius * std::cos(angle);
+		    float y = radius * std::sin(angle);
+
+		    do {
+		        Coords.emplace_back(static_cast<int>(centerX + x + 0.5), static_cast<int>(centerY - y + 0.5));
+		        angle += 0.001;
+		        x = radius * std::cos(angle);
+		        y = radius * std::sin(angle);
+		    } while (angle <= range);
+
+		    auto Coord1 = Coords.front();
+		    auto Coord2 = Coords.back();
+
+		    Coord line1 = {centerX, centerY, std::get<0>(Coord1), std::get<1>(Coord1)};
+		    Coord line2 = {centerX, centerY, std::get<0>(Coord2), std::get<1>(Coord2)};
+
+		    getLineCoords(line1, Coords);
+		    getLineCoords(line2, Coords);
+
+		    std::vector<int> ys;
+		    getAllYs(ys, Coords);
+
+		    std::vector<Coord> lines;
+		    for (int searchY : ys) {
+		        std::vector<int> xs;
+		        for (const auto& [x, y] : Coords) {
+		            if (y == searchY) {
+		                xs.push_back(x);
+		            }
+		        }
+		        std::sort(xs.begin(), xs.end());
+		        lines.emplace_back(xs.front(), searchY, xs.back(), searchY);
+		    }
+
+		    for (const auto& lineCoord : lines) {
+		        Coord non_const_lineCoord = lineCoord;
+				drawLine(non_const_lineCoord, wedgeColor);
+		    }
 		}
 
-		void drawfilledrect(point &xy, point &wh, pixel &color)
-		{
-			int x2 = std::get<0>(xy) + std::get<0>(wh);
-			int y2 = std::get<1>(xy) + std::get<1>(wh);
-		
-			coord coords=std::make_tuple(0,0,0,0);
-			for (int i = std::get<1>(xy); i < y2; ++i)
-			{
-				coords=std::make_tuple(std::get<0>(xy),i,x2,i);
-				draw_line(coords, color);
-			}
+		void drawTriangleImpl(const Point& pt1, const Point& pt2, const Point& pt3, const Pixel& triangleColor) {
+		    auto [x1, y1] = pt1;
+		    auto [x2, y2] = pt2;
+		    auto [x3, y3] = pt3;
+
+		    Coord line1 = {x1, y1, x2, y2};
+		    Coord line2 = {x2, y2, x3, y3};
+		    Coord line3 = {x3, y3, x1, y1};
+
+		    drawLine(line1, triangleColor);
+		    drawLine(line2, triangleColor);
+		    drawLine(line3, triangleColor);
 		}
 
-		void drawcircle(point &xy, int radius, pixel &color)
-		{
-			int x0 = 0;
-			int y0 = radius;
-			int d = 3 - 2 * radius;
-			int xx=0;
-			int yy=0;
-			int x=std::get<0>(xy);
-			int y=std::get<1>(xy);
-			coord coords=std::make_tuple(0,0,0,0);
-			unsigned char mask=255;
-			if (!radius) return;
+		void drawFilledTriangleImpl(const Point& pt1, const Point& pt2, const Point& pt3, const Pixel& fillColor) {
+		    auto [x1, y1] = pt1;
+		    auto [x2, y2] = pt2;
+		    auto [x3, y3] = pt3;
+
+		    if (y1 > y2) { std::swap(y1, y2); std::swap(x1, x2); }
+		    if (y1 > y3) { std::swap(y1, y3); std::swap(x1, x3); }
+		    if (y2 > y3) { std::swap(y2, y3); std::swap(x2, x3); }
+
+		    int t1x = x1, t2x = x1, y = y1;
+		    int dx1 = std::abs(x2 - x1), dx2 = std::abs(x3 - x1);
+		    int dy1 = y2 - y1, dy2 = y3 - y1;
+		    int signx1 = (x2 - x1 > 0) ? 1 : -1, signx2 = (x3 - x1 > 0) ? 1 : -1;
+		    int e1 = dx1 / 2, e2 = dx2 / 2;
+		    bool changed1 = false, changed2 = false;
+		    if (dy1 > dx1) { std::swap(dy1, dx1); changed1 = true; }
+		    if (dy2 > dx2) { std::swap(dy2, dx2); changed2 = true; }
+
+		    for (; y <= y3; y++) {
+		        int minx = std::min(t1x, t2x);
+		        int maxx = std::max(t1x, t2x);
+		        Coord tempCoord = {minx, y, maxx, y};
+				drawLine(tempCoord, fillColor);
+
+
+		        // Update t1x, t2x
+		        for (int i = 0; i < dx1; i++) {
+		            e1 += dy1;
+		            while (e1 >= dx1) {
+		                e1 -= dx1;
+		                if (changed1) break;
+		                else t1x += signx1;
+		            }
+		            if (changed1) t1x += signx1;
+		        }
+
+		        for (int i = 0; i < dx2; i++) {
+		            e2 += dy2;
+		            while (e2 >= dx2) {
+		                e2 -= dx2;
+		                if (changed2) break;
+		                else t2x += signx2;
+		            }
+		            if (changed2) t2x += signx2;
+		        }
+		    }
+		}
 		
-			while (y0 >= x0)
-			{
-				if (mask & 0x01) {xx=x + x0;yy=y - y0;coords=std::make_tuple(xx,yy,xx,yy);draw_line(coords, color);}
-				if (mask & 0x02) {xx=x + y0;yy=y - x0;coords=std::make_tuple(xx,yy,xx,yy);draw_line(coords, color);}
-				if (mask & 0x04) {xx=x + y0;yy=y + x0;coords=std::make_tuple(xx,yy,xx,yy);draw_line(coords, color);}
-				if (mask & 0x08) {xx=x + x0;yy=y + y0;coords=std::make_tuple(xx,yy,xx,yy);draw_line(coords, color);}
-				if (mask & 0x10) {xx=x - x0;yy=y + y0;coords=std::make_tuple(xx,yy,xx,yy);draw_line(coords, color);}
-				if (mask & 0x20) {xx=x - y0;yy=y + x0;coords=std::make_tuple(xx,yy,xx,yy);draw_line(coords, color);}
-				if (mask & 0x40) {xx=x - y0;yy=y - x0;coords=std::make_tuple(xx,yy,xx,yy);draw_line(coords, color);}
-				if (mask & 0x80) {xx=x - x0;yy=y - y0;coords=std::make_tuple(xx,yy,xx,yy);draw_line(coords, color);}
-				if (d < 0) d += 4 * x0++ + 6;
-				else d += 4 * (x0++ - y0--) + 10;
-			}
+		void drawRotatedRectangleImpl(int x, int y, int w, int h, double angle, const Pixel& px) {
+		    double rad = angle * M_PI / 180.0;
+		    double cos_angle = std::cos(rad);
+		    double sin_angle = std::sin(rad);
+		    
+		    int cx = x + w / 2;
+		    int cy = y + h / 2;
+		    
+		    std::vector<Point> corners;
+		    
+		    for (int dx : {-w / 2, w / 2}) {
+		        for (int dy : {-h / 2, h / 2}) {
+		            int x_rot = cx + dx * cos_angle - dy * sin_angle;
+		            int y_rot = cy + dx * sin_angle + dy * cos_angle;
+		            corners.emplace_back(x_rot, y_rot);
+		        }
+		    }
+
+		    Coord Coords1 = std::make_tuple(std::get<0>(corners[0]), std::get<1>(corners[0]), std::get<0>(corners[1]), std::get<1>(corners[1]));
+		    Coord Coords2 = std::make_tuple(std::get<0>(corners[1]), std::get<1>(corners[1]), std::get<0>(corners[3]), std::get<1>(corners[3]));
+		    Coord Coords3 = std::make_tuple(std::get<0>(corners[3]), std::get<1>(corners[3]), std::get<0>(corners[2]), std::get<1>(corners[2]));
+		    Coord Coords4 = std::make_tuple(std::get<0>(corners[2]), std::get<1>(corners[2]), std::get<0>(corners[0]), std::get<1>(corners[0]));
+
+		    drawLine(Coords1, px);
+		    drawLine(Coords2, px);
+		    drawLine(Coords3, px);
+		    drawLine(Coords4, px);
 		}
 
-		void drawfilledcircle(point &xy, int radius, pixel &color)
-		{
-			int x0 = 0;
-			int y0 = radius;
-			int d = 3 - 2 * radius;
-			int x=std::get<0>(xy);
-			int y=std::get<1>(xy);
-			coord coords=std::make_tuple(0,0,0,0);
-			if (!radius) return;
-		
-			while (y0 >= x0)
-			{
-				coords=std::make_tuple(x-x0,y-y0,x+x0,y-y0);
-				draw_line(coords, color);
-				coords=std::make_tuple(x-y0,y-x0,x+y0,y-x0);
-				draw_line(coords, color);
-				coords=std::make_tuple(x-x0,y+y0,x+x0,y+y0);
-				draw_line(coords, color);
-				coords=std::make_tuple(x-y0,y+x0,x+y0,y+x0);
-				draw_line(coords, color);
-				if (d < 0) d += 4 * x0++ + 6;
-				else d += 4 * (x0++ - y0--) + 10;
-			}
+		void drawFilledRotatedRectangleImpl(int x, int y, int w, int h, double angle, const Pixel& px) {
+		    double angle_rad = -angle * M_PI / 180.0;
+		    double cos_angle = std::cos(angle_rad);
+		    double sin_angle = std::sin(angle_rad);
+		    
+		    double aabb_width = std::abs(w * cos_angle) + std::abs(h * sin_angle);
+		    double aabb_height = std::abs(w * sin_angle) + std::abs(h * cos_angle);
+		    
+		    int rect_center_x = x + w / 2;
+		    int rect_center_y = y + h / 2;
+		    
+		    int aabb_x1 = rect_center_x - aabb_width / 2;
+		    int aabb_y1 = rect_center_y - aabb_height / 2;
+		    int aabb_x2 = rect_center_x + aabb_width / 2;
+		    int aabb_y2 = rect_center_y + aabb_height / 2;
+		    
+		    for (int image_y = aabb_y1; image_y <= aabb_y2; ++image_y) {
+		        for (int image_x = aabb_x1; image_x <= aabb_x2; ++image_x) {
+		            int dx = image_x - rect_center_x;
+		            int dy = image_y - rect_center_y;
+		            
+		            int rect_x = dx * cos_angle - dy * sin_angle;
+		            int rect_y = dx * sin_angle + dy * cos_angle;
+		            
+		            if (isInsideRectangle(rect_x, rect_y, w, h)) {
+		                if (image_x >= 0 && image_x < m_width && image_y >= 0 && image_y < m_height) {
+		                    setPixel(image_x, image_y, px);
+		                }
+		            }
+		        }
+		    }
 		}
 
-		void getallys(std::vector<int> &ys,std::vector<point> &coords)
-		{
-			for (auto& c : coords) {
-				ys.push_back(std::get<1>(c));
-			}
-		
-			sort(ys.begin(), ys.end());
-			ys.erase( unique( ys.begin(), ys.end() ), ys.end() );
+		void drawRotatedEllipseImpl(int x, int y, int w, int h, double angle, const Pixel& px) {
+		    double angle_rad = angle * M_PI / 180.0;
+		    double cos_angle = std::cos(angle_rad);
+		    double sin_angle = std::sin(angle_rad);
+
+		    int ellipse_center_x = x + w / 2;
+		    int ellipse_center_y = y + h / 2;
+
+		    for (double theta = 0; theta <= 2 * M_PI; theta += 0.001) {
+		        int dx = w / 2 * std::cos(theta);
+		        int dy = h / 2 * std::sin(theta);
+
+		        int image_x = ellipse_center_x + (dx * cos_angle - dy * sin_angle);
+		        int image_y = ellipse_center_y + (dx * sin_angle + dy * cos_angle);
+
+		        if (image_x >= 0 && image_x < m_width && image_y >= 0 && image_y < m_height) {
+		            m_img[getIndex(image_x, image_y)] = px;
+		        }
+		    }
 		}
 
-		void getlinecoords(coord line,std::vector<point> &coords)
-		{
-			int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
-			int x1=std::get<0>(line);int y1=std::get<1>(line);int x2=std::get<2>(line);int y2=std::get<3>(line);
-			dx = x2 - x1; dy = y2 - y1;
-			if (dx == 0)
-			{
-				if (y2 < y1) std::swap(y1, y2);
-				for (y = y1; y <= y2; y++)
-					coords.push_back(std::make_tuple(x1,y));
-				return;
-			}
-			if (dy == 0)
-			{
-				if (x2 < x1) std::swap(x1, x2);
-				for (x = x1; x <= x2; x++)
-					coords.push_back(std::make_tuple(x,y1));
-				return;
-			}
-			dx1 = abs(dx); dy1 = abs(dy);
-			px = 2 * dy1 - dx1;	py = 2 * dx1 - dy1;
-			if (dy1 <= dx1)
-			{
-				if (dx >= 0)
-				{
-					x = x1; y = y1; xe = x2;
-				}
-				else
-				{
-					x = x2; y = y2; xe = x1;
-				}
-				coords.push_back(std::make_tuple(x,y));
-				for (i = 0; x<xe; i++)
-				{
-					x = x + 1;
-					if (px<0)
-						px = px + 2 * dy1;
-					else
-					{
-						if ((dx<0 && dy<0) || (dx>0 && dy>0)) y = y + 1; else y = y - 1;
-						px = px + 2 * (dy1 - dx1);
-					}
-					coords.push_back(std::make_tuple(x,y));
-				}
-			}
-			else
-			{
-				if (dy >= 0)
-				{
-					x = x1; y = y1; ye = y2;
-				}
-				else
-				{
-					x = x2; y = y2; ye = y1;
-				}
-				coords.push_back(std::make_tuple(x,y));
-				for (i = 0; y<ye; i++)
-				{
-					y = y + 1;
-					if (py <= 0)
-						py = py + 2 * dx1;
-					else
-					{
-						if ((dx<0 && dy<0) || (dx>0 && dy>0)) x = x + 1; else x = x - 1;
-						py = py + 2 * (dx1 - dy1);
-					}
-					coords.push_back(std::make_tuple(x,y));
-				}
-			}
+		void drawFilledRotatedEllipseImpl(int x, int y, int w, int h, double angle, const Pixel& px) {
+		    double angle_rad = angle * M_PI / 180.0;
+		    double cos_angle = std::cos(angle_rad);
+		    double sin_angle = std::sin(angle_rad);
+
+		    int ellipse_center_x = x + w / 2;
+		    int ellipse_center_y = y + h / 2;
+
+		    int aabb_x1 = ellipse_center_x - (w / 2) - std::abs((h / 2) * sin_angle);
+		    int aabb_x2 = ellipse_center_x + (w / 2) + std::abs((h / 2) * sin_angle);
+		    int aabb_y1 = ellipse_center_y - (h / 2) - std::abs((w / 2) * cos_angle);
+		    int aabb_y2 = ellipse_center_y + (h / 2) + std::abs((w / 2) * cos_angle);
+
+		    auto isinbounds = [this](const Point& pt) -> bool {
+		        return std::get<0>(pt) >= 0 && std::get<0>(pt) < m_width && std::get<1>(pt) >= 0 && std::get<1>(pt) < m_height;
+		    };
+
+		    for (int scan_y = aabb_y1; scan_y <= aabb_y2; ++scan_y) {
+		        for (int scan_x = aabb_x1; scan_x <= aabb_x2; ++scan_x) {
+		            int dx = scan_x - ellipse_center_x;
+		            int dy = scan_y - ellipse_center_y;
+
+		            int rotated_x = dx * cos_angle + dy * sin_angle;
+		            int rotated_y = -dx * sin_angle + dy * cos_angle;
+
+		            if (4.0 * rotated_x * rotated_x / (w * w) + 4.0 * rotated_y * rotated_y / (h * h) <= 1.0) {
+		                Point pt = std::make_tuple(scan_x, scan_y);
+		                if (isinbounds(pt)) {
+		                    m_img[getIndex(scan_x, scan_y)] = px;
+		                }
+		            }
+		        }
+		    }
 		}
 
-		void drawwedge(point center,int radius,int start_angle,int end_angle,pixel &color)
-		{
-			std::vector<point> coords;
-		
-			float angle=(((start_angle<=end_angle)?start_angle:end_angle)*(M_PI/180));
-			float range=(((end_angle>start_angle)?end_angle:start_angle)*(M_PI/180));
-			float x=(radius*cos(angle));
-			float y=(radius*sin(angle));
-			do
-			{
-				coords.push_back(std::make_tuple((int)(std::get<0>(center)+x+0.5),(int)(std::get<1>(center)-y+0.5)));
-				angle+=0.001;
-				x=(radius*cos(angle));
-				y=(radius*sin(angle));
-			}
-			while(angle<=range);
-		
-			point co1=coords.front();
-			point co2=coords.back();
-		
-			coord line1=std::make_tuple(std::get<0>(center),std::get<1>(center),std::get<0>(co1),std::get<1>(co1));
-			coord line2=std::make_tuple(std::get<0>(center),std::get<1>(center),std::get<0>(co2),std::get<1>(co2));
+		void drawRotatedPolygonImpl(const std::vector<Point>& vertices, double angle, const Pixel& px) {
+		    int sum_x = 0, sum_y = 0;
+		    for (const auto& vertex : vertices) {
+		        sum_x += std::get<0>(vertex);
+		        sum_y += std::get<1>(vertex);
+		    }
+		    Point centroid = std::make_tuple(sum_x / vertices.size(), sum_y / vertices.size());
 
-			getlinecoords(line1,coords);
-			getlinecoords(line2,coords);
-		
-			for (auto & e : coords)
-			{
-				line1=std::make_tuple(std::get<0>(e),std::get<1>(e),std::get<0>(e),std::get<1>(e));
-				draw_line(line1,color);
-			}
+		    auto rotate_Point = [centroid](Point p, double angle_rad) {
+		        double cos_angle = std::cos(angle_rad);
+		        double sin_angle = std::sin(angle_rad);
+		        int dx = std::get<0>(p) - std::get<0>(centroid);
+		        int dy = std::get<1>(p) - std::get<1>(centroid);
+		        int rotated_x = dx * cos_angle - dy * sin_angle;
+		        int rotated_y = dx * sin_angle + dy * cos_angle;
+		        return std::make_tuple(std::get<0>(centroid) + rotated_x, std::get<1>(centroid) + rotated_y);
+		    };
+
+		    double angle_rad = angle * M_PI / 180.0;
+		    std::vector<Point> rotated_vertices;
+		    for (const auto& vertex : vertices) {
+		        rotated_vertices.push_back(rotate_Point(vertex, angle_rad));
+		    }
+
+		    auto isinbounds = [this](const Point& pt) -> bool {
+		        return std::get<0>(pt) >= 0 && std::get<0>(pt) < m_width && std::get<1>(pt) >= 0 && std::get<1>(pt) < m_height;
+		    };
+
+		    for (size_t i = 0; i < rotated_vertices.size(); ++i) {
+		        Point p1 = rotated_vertices[i];
+		        Point p2 = rotated_vertices[(i + 1) % rotated_vertices.size()];
+		        if (isinbounds(p1) && isinbounds(p2)) {
+		            Coord line = std::make_tuple(std::get<0>(p1), std::get<1>(p1), std::get<0>(p2), std::get<1>(p2));
+		            drawLine(line, px);
+		        }
+		    }
 		}
 
-		void drawfilledwedge(point center,int radius,int start_angle,int end_angle,pixel &color)
-		{
-			std::vector<point> coords;
-		
-			float angle=(((start_angle<=end_angle)?start_angle:end_angle)*(M_PI/180));
-			float range=(((end_angle>start_angle)?end_angle:start_angle)*(M_PI/180));
-			float x=(radius*cos(angle));
-			float y=(radius*sin(angle));
-			do
-			{
-				coords.push_back(std::make_tuple((int)(std::get<0>(center)+x+0.5),(int)(std::get<1>(center)-y+0.5)));
-				angle+=0.001;
-				x=(radius*cos(angle));
-				y=(radius*sin(angle));
-			}
-			while(angle<=range);
-		
-			point co1=coords.front();
-			point co2=coords.back();
+		void drawFilledRotatedPolygonImpl(const std::vector<Point>& vertices, double angle, const Pixel& px) {
+		    int sum_x = 0, sum_y = 0;
+		    for (const auto& vertex : vertices) {
+		        sum_x += std::get<0>(vertex);
+		        sum_y += std::get<1>(vertex);
+		    }
+		    Point centroid = std::make_tuple(sum_x / vertices.size(), sum_y / vertices.size());
 
-			coord line1=std::make_tuple(std::get<0>(center),std::get<1>(center),std::get<0>(co1),std::get<1>(co1));
-			coord line2=std::make_tuple(std::get<0>(center),std::get<1>(center),std::get<0>(co2),std::get<1>(co2));
-		
-			getlinecoords(line1,coords);
-			getlinecoords(line2,coords);
-		
-			std::vector<int> ys;
-			std::vector<int> xs;
-			getallys(ys,coords);
-			std::vector<coord> lines;
-		
-			for (int search=0;search<=ys.size();++search)
-			{
-				for (auto& c : coords) {
-					if (std::get<1>(c) == ys[search]) {
-						xs.push_back(std::get<0>(c));
-					}
-				}
-				sort(xs.begin(), xs.end());
-				lines.push_back(std::make_tuple(xs.front(),ys[search],xs.back(),ys[search]));
-				xs.clear();
-			}
-		
-			coord cd=std::make_tuple(0,0,0,0);
-			for (auto& l : lines) {
-				draw_line(l,color);
-			}
+		    auto rotate_Point = [centroid](Point p, double angle_rad) {
+		        double cos_angle = std::cos(angle_rad);
+		        double sin_angle = std::sin(angle_rad);
+		        int dx = std::get<0>(p) - std::get<0>(centroid);
+		        int dy = std::get<1>(p) - std::get<1>(centroid);
+		        int rotated_x = dx * cos_angle - dy * sin_angle;
+		        int rotated_y = dx * sin_angle + dy * cos_angle;
+		        return std::make_tuple(std::get<0>(centroid) + rotated_x, std::get<1>(centroid) + rotated_y);
+		    };
+
+		    double angle_rad = angle * M_PI / 180.0;
+		    std::vector<Point> rotated_vertices;
+		    for (const auto& vertex : vertices) {
+		        rotated_vertices.push_back(rotate_Point(vertex, angle_rad));
+		    }
+
+		    auto isinbounds = [this](const Point& pt) -> bool {
+		        return std::get<0>(pt) >= 0 && std::get<0>(pt) < m_width && std::get<1>(pt) >= 0 && std::get<1>(pt) < m_height;
+		    };
+
+		    for (int y = 0; y < m_height; ++y) {
+		        std::vector<int> intersections;
+		        for (size_t i = 0; i < rotated_vertices.size(); ++i) {
+		            Point p1 = rotated_vertices[i];
+		            Point p2 = rotated_vertices[(i + 1) % rotated_vertices.size()];
+		            int y1 = std::get<1>(p1), y2 = std::get<1>(p2);
+		            int x1 = std::get<0>(p1), x2 = std::get<0>(p2);
+
+		            if ((y1 < y && y2 >= y) || (y2 < y && y1 >= y)) {
+		                int x = x1 + (y - y1) * (x2 - x1) / (y2 - y1);
+		                intersections.push_back(x);
+		            }
+		        }
+
+		        std::sort(intersections.begin(), intersections.end());
+
+		        for (size_t i = 0; i + 1 < intersections.size(); i += 2) {
+		            for (int x = intersections[i]; x <= intersections[i + 1]; ++x) {
+		                if (isinbounds({x, y})) {
+		                    setPixel(x,y,px);
+		                }
+		            }
+		        }
+		    }
 		}
 
-		void drawtriangle(point pt1, point pt2, point pt3, pixel &color)
-		{
-			coord coords=std::make_tuple(std::get<0>(pt1),std::get<1>(pt1),std::get<0>(pt2),std::get<1>(pt2));
-			draw_line(coords,color);
-			coords=std::make_tuple(std::get<0>(pt2),std::get<1>(pt2),std::get<0>(pt3),std::get<1>(pt3));
-			draw_line(coords,color);
-			coords=std::make_tuple(std::get<0>(pt3),std::get<1>(pt3),std::get<0>(pt1),std::get<1>(pt1));
-			draw_line(coords,color);
+	    void convertToGrayscaleImpl() {
+	        for (int y = 0; y < m_height; ++y) {
+	            for (int x = 0; x < m_width; ++x) {
+	                Pixel& px = m_img[getIndex(x, y)];
+	                auto [red, green, blue] = px;
+	                double gray = 0.299 * red + 0.587 * green + 0.114 * blue;
+	                m_img[getIndex(x, y)] = {gray, gray, gray};
+	            }
+	        }
+	    }
+
+	    void applyGaussianBlurImpl() {
+	        std::array<std::array<double, 3>, 3> kernel = {{
+	            {1.0 / 16, 2.0 / 16, 1.0 / 16},
+	            {2.0 / 16, 4.0 / 16, 2.0 / 16},
+	            {1.0 / 16, 2.0 / 16, 1.0 / 16}
+	        }};
+	        
+	        for (int y = 1; y < m_height - 1; ++y) {
+	            for (int x = 1; x < m_width - 1; ++x) {
+	                double sumR = 0.0, sumG = 0.0, sumB = 0.0;
+
+	                for (int k = -1; k <= 1; ++k) {
+	                    for (int j = -1; j <= 1; ++j) {
+	                        const Pixel& px = m_img[getIndex(x + j, y + k)];
+	                        auto [r, g, b] = px;
+	                        sumR += r * kernel[k + 1][j + 1];
+	                        sumG += g * kernel[k + 1][j + 1];
+	                        sumB += b * kernel[k + 1][j + 1];
+	                    }
+	                }
+
+	                m_img[getIndex(x, y)] = {sumR, sumG, sumB};
+	            }
+	        }
+	    }
+
+	    void drawGradientsImpl(const std::vector<Pixel>& colors, double angle_degree) {
+	        double angle = angle_degree * M_PI / 180.0;
+
+	        if (colors.size() < 2 || colors.size() > 5) {
+	            std::cerr << "Invalid number of colors";
+	            return;
+	        }
+
+	        auto interpolate = [](const Pixel& a, const Pixel& b, double t) -> Pixel {
+	            auto [r1, g1, b1] = a;
+	            auto [r2, g2, b2] = b;
+	            return {r1 + t * (r2 - r1), g1 + t * (g2 - g1), b1 + t * (b2 - b1)};
+	        };
+
+	        double max_projection = m_width * std::cos(angle) + m_height * std::sin(angle);
+	        double min_projection = 0;
+	        double total_length = max_projection - min_projection;
+	        double segment_length = total_length / (colors.size() - 1);
+
+	        for (int y = 0; y < m_height; ++y) {
+	            for (int x = 0; x < m_width; ++x) {
+	                double projection = x * std::cos(angle) + y * std::sin(angle);
+	                int segment_index = std::min(static_cast<int>(projection / segment_length), static_cast<int>(colors.size()) - 2);
+	                double t_local = (projection - segment_index * segment_length) / segment_length;
+
+	                Pixel color = interpolate(colors[segment_index], colors[segment_index + 1], t_local);
+	                setPixel(x,y,color);
+	            }
+	        }
+	    }
+
+	    void readImpl(const std::string& filename) {
+	        std::string magic;
+	        int max;
+	        uint8_t buffer[3];
+	        Pixel color;
+
+	        std::ifstream in(filename, std::ifstream::binary);
+	        if (!in.is_open()) {
+	            std::cout << "Can't open " << filename << std::endl;
+	            exit(1);
+	        }
+
+	        in >> magic;
+	        in.seekg(1, std::ios::cur);
+	        char c;
+	        in.get(c);
+	        if (c == '#') {
+	            while (c != '\n') {
+	                in.get(c);
+	            }
+	        } else {
+	            in.seekg(-1, std::ios::cur);
+	        }
+
+	        in >> m_width >> m_height >> max;
+	        if (max != 255) {
+	            std::cout << "Not 8 bit per RGB color." << std::endl;
+	            exit(1);
+	        }
+
+	        if (magic == "P6") {
+	            in.seekg(1, std::ios::cur);
+	            m_img.clear();
+	            for (int i = 0; i < m_width * m_height; ++i) {
+	                in.read(reinterpret_cast<char*>(buffer), 3);
+	                color = std::make_tuple(
+	                    static_cast<double>(buffer[0]) / 255.0,
+	                    static_cast<double>(buffer[1]) / 255.0,
+	                    static_cast<double>(buffer[2]) / 255.0
+	                );
+	                m_img.push_back(color);
+	            }
+	        } else {
+	            std::cout << filename << " is not a P6 file." << std::endl;
+	            exit(1);
+	        }
+	        
+	        in.close();
+	    }
+
+	    void writeImpl(const std::string& filename) {
+	        Pixel color;
+	        std::string fname = setSuffix(filename, ".ppm");
+
+	        std::ofstream out(fname, std::ios_base::out | std::ios_base::binary);
+	        if (!out.is_open()) {
+	            std::cerr << "Could not open " << fname << " for writing." << std::endl;
+	            exit(1);
+	        }
+
+	        out << "P6\n" << m_width << ' ' << m_height << "\n255\n";
+
+	        for (int i = 0; i < m_width * m_height; ++i) {
+	            color = m_img[i];
+	            out << static_cast<char>(std::get<0>(color) * 255.0)
+	                << static_cast<char>(std::get<1>(color) * 255.0)
+	                << static_cast<char>(std::get<2>(color) * 255.0);
+	        }
+
+	        out.close();
+	    }
+
+		void getAllYs(std::vector<int> &ys, std::vector<Point> &Coords) {
+		    for (auto& c : Coords) {
+		        ys.push_back(std::get<1>(c));
+		    }
+		    std::sort(ys.begin(), ys.end());
+		    ys.erase(std::unique(ys.begin(), ys.end()), ys.end());
 		}
 
-		void drawfilledtriangle(point pt1,point pt2,point pt3,pixel &color)
-		{
-			int x1=std::get<0>(pt1); int y1=std::get<1>(pt1); int x2=std::get<0>(pt2); int y2=std::get<1>(pt2); int x3=std::get<0>(pt3); int y3=std::get<1>(pt3);
-			coord coords=std::make_tuple(0,0,0,0);
-			auto SWAP = [](int &x, int &y) { int t = x; x = y; y = t; };
+		void getLineCoords(const Coord& line, std::vector<Point>& Coords) {
+		    auto [x1, y1, x2, y2] = line;
+		    int dx = x2 - x1;
+		    int dy = y2 - y1;
+		    int dx1 = std::abs(dx);
+		    int dy1 = std::abs(dy);
+
+		    if (dx == 0) {
+		        if (y2 < y1) std::swap(y1, y2);
+		        for (int y = y1; y <= y2; ++y) {
+		            Coords.emplace_back(x1, y);
+		        }
+		        return;
+		    }
+
+		    if (dy == 0) {
+		        if (x2 < x1) std::swap(x1, x2);
+		        for (int x = x1; x <= x2; ++x) {
+		            Coords.emplace_back(x, y1);
+		        }
+		        return;
+		    }
+
+		    int px = 2 * dy1 - dx1;
+		    int py = 2 * dx1 - dy1;
+		    int x, y, end;
+
+		    if (dy1 <= dx1) {
+		        if (dx >= 0) {
+		            x = x1;
+		            y = y1;
+		            end = x2;
+		        } else {
+		            x = x2;
+		            y = y2;
+		            end = x1;
+		        }
+		        Coords.emplace_back(x, y);
+		        for (int i = 0; x < end; ++i) {
+		            ++x;
+		            if (px < 0) {
+		                px += 2 * dy1;
+		            } else {
+		                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) ++y;
+		                else --y;
+		                px += 2 * (dy1 - dx1);
+		            }
+		            Coords.emplace_back(x, y);
+		        }
+		    } else {
+		        if (dy >= 0) {
+		            x = x1;
+		            y = y1;
+		            end = y2;
+		        } else {
+		            x = x2;
+		            y = y2;
+		            end = y1;
+		        }
+		        Coords.emplace_back(x, y);
+		        for (int i = 0; y < end; ++i) {
+		            ++y;
+		            if (py <= 0) {
+		                py += 2 * dx1;
+		            } else {
+		                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) ++x;
+		                else --x;
+		                py += 2 * (dx1 - dy1);
+		            }
+		            Coords.emplace_back(x, y);
+		        }
+		    }
+		}
 		
-			int t1x, t2x, y, minx, maxx, t1xp, t2xp;
-			bool changed1 = false;
-			bool changed2 = false;
-			int signx1, signx2, dx1, dy1, dx2, dy2;
-			int e1, e2;
-			if (y1>y2) { SWAP(y1, y2); SWAP(x1, x2); }
-			if (y1>y3) { SWAP(y1, y3); SWAP(x1, x3); }
-			if (y2>y3) { SWAP(y2, y3); SWAP(x2, x3); }
-		
-			t1x = t2x = x1; y = y1;
-			dx1 = (int)(x2 - x1); if (dx1<0) { dx1 = -dx1; signx1 = -1; }
-			else signx1 = 1;
-			dy1 = (int)(y2 - y1);
-		
-			dx2 = (int)(x3 - x1); if (dx2<0) { dx2 = -dx2; signx2 = -1; }
-			else signx2 = 1;
-			dy2 = (int)(y3 - y1);
-		
-			if (dy1 > dx1) {
-				SWAP(dx1, dy1);
-				changed1 = true;
-			}
-			if (dy2 > dx2) {
-				SWAP(dy2, dx2);
-				changed2 = true;
-			}
-		
-			e2 = (int)(dx2 >> 1);
-			if (y1 == y2) goto next;
-			e1 = (int)(dx1 >> 1);
-		
-			for (int i = 0; i < dx1;) {
-				t1xp = 0; t2xp = 0;
-				if (t1x<t2x) { minx = t1x; maxx = t2x; }
-				else { minx = t2x; maxx = t1x; }
-				while (i<dx1) {
-					i++;
-					e1 += dy1;
-					while (e1 >= dx1) {
-						e1 -= dx1;
-						if (changed1) t1xp = signx1;
-						else          goto next1;
-					}
-					if (changed1) break;
-					else t1x += signx1;
-				}
-			next1:
-				while (1) {
-					e2 += dy2;
-					while (e2 >= dx2) {
-						e2 -= dx2;
-						if (changed2) t2xp = signx2;
-						else          goto next2;
-					}
-					if (changed2)     break;
-					else              t2x += signx2;
-				}
-			next2:
-				if (minx>t1x) minx = t1x; 
-				if (minx>t2x) minx = t2x;
-				if (maxx<t1x) maxx = t1x; 
-				if (maxx<t2x) maxx = t2x;
-				coords=std::make_tuple(minx,y,maxx,y);
-				draw_line(coords,color);
-				if (!changed1) t1x += signx1;
-				t1x += t1xp;
-				if (!changed2) t2x += signx2;
-				t2x += t2xp;
-				y += 1;
-				if (y == y2) break;
-		
-				}
-			next:
-			dx1 = (int)(x3 - x2); if (dx1<0) { dx1 = -dx1; signx1 = -1; }
-			else signx1 = 1;
-			dy1 = (int)(y3 - y2);
-			t1x = x2;
-		
-			if (dy1 > dx1) {
-				SWAP(dy1, dx1);
-				changed1 = true;
-			}
-			else changed1 = false;
-		
-			e1 = (int)(dx1 >> 1);
-		
-			for (int i = 0; i <= dx1; i++) {
-				t1xp = 0; t2xp = 0;
-				if (t1x<t2x) { minx = t1x; maxx = t2x; }
-				else { minx = t2x; maxx = t1x; }
-				while (i<dx1) {
-					e1 += dy1;
-					while (e1 >= dx1) {
-						e1 -= dx1;
-						if (changed1) { t1xp = signx1; break; }
-						else          goto next3;
-					}
-					if (changed1) break;
-					else   	   	  t1x += signx1;
-					if (i<dx1) i++;
-				}
-			next3:
-				while (t2x != x3) {
-					e2 += dy2;
-					while (e2 >= dx2) {
-						e2 -= dx2;
-						if (changed2) t2xp = signx2;
-						else          goto next4;
-					}
-					if (changed2)     break;
-					else              t2x += signx2;
-				}
-			next4:
-		
-				if (minx>t1x) minx = t1x;
-				if (minx>t2x) minx = t2x;
-				if (maxx<t1x) maxx = t1x; 
-				if (maxx<t2x) maxx = t2x;
-				coords=std::make_tuple(minx,y,maxx,y);
-				draw_line(coords,color);
-				if (!changed1) t1x += signx1;
-				t1x += t1xp;
-				if (!changed2) t2x += signx2;
-				t2x += t2xp;
-				y += 1;
-				if (y>y3) return;
-			}
+		bool isInsideRectangle(int x, int y, int w, int h) {
+		    return x >= -w / 2 && x <= w / 2 && y >= -h / 2 && y <= h / 2;
 		}
 
-		std::vector<pixel> m_img;
-		int m_width;
-		int m_height;
+		std::string setSuffix(const std::string& pathFilename, const std::string& suffix) {
+		    if (getSuffix(pathFilename) != suffix && !suffix.empty()) {
+		        std::filesystem::path filePath(pathFilename);
+		        filePath.replace_extension(suffix);
+		        return filePath.string();
+		    }
+		    return pathFilename;
+		}
+
+		std::string getSuffix(const std::string& pathFilename) {
+		    std::filesystem::path filePath(pathFilename);
+		    if (filePath.has_extension()) {
+		        return filePath.extension().string();
+		    }
+		    return "";
+		}
+
+		std::vector<Pixel> m_img;
+        int m_width = 0;
+        int m_height = 0;
 	};
-
 } // namespace ppm
