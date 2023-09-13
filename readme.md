@@ -53,75 +53,75 @@ clang++ -std=c++20 test.cpp -o test
 ## Overview
 
 ### Types
-using **pixel** = std::tuple<double, double, double>;
+using **Pixel** = std::tuple<double, double, double>;
 
-using **coord** = std::tuple<int, int, int, int>;
+using **Coord** = std::tuple<int, int, int, int>;
 
 using **point** = std::tuple<int, int>;
 
 ### Helper functions
 constexpr float **getFloatColorElement**(uint8_t element)
 
-constexpr float **getfRedColorElement**(pixel px)
+constexpr float **getfRedColorElement**(Pixel px)
 
-constexpr uint8_t **getRedColorElement**(pixel px) 
+constexpr uint8_t **getRedColorElement**(Pixel px) 
 
-constexpr float **getfGreenColorElement**(pixel px) 
+constexpr float **getfGreenColorElement**(Pixel px) 
 
-constexpr uint8_t **getGreenColorElement**(pixel px) 
+constexpr uint8_t **getGreenColorElement**(Pixel px) 
 
-constexpr float **getfBlueColorElement**(pixel px) 
+constexpr float **getfBlueColorElement**(Pixel px) 
 
-constexpr uint8_t **getBlueColorElement**(pixel px)
+constexpr uint8_t **getBlueColorElement**(Pixel px)
 
-constexpr pixel **createfPixelWithColor**(float r, float g, float b)
+constexpr Pixel **createfPixelWithColor**(float r, float g, float b)
 
-constexpr pixel **createPixelWithColor**(uint8_t r, uint8_t g, uint8_t b) 
+constexpr Pixel **createPixelWithColor**(uint8_t r, uint8_t g, uint8_t b) 
 
-constexpr pixel **createfGrayPixel**(float v) 
+constexpr Pixel **createfGrayPixel**(float v) 
 
-constexpr pixel **createGrayPixel**(uint8_t v)
+constexpr Pixel **createGrayPixel**(uint8_t v)
 
-constexpr coord **createCoord**(int x1, int y1, int x2, int y2) 
+constexpr Coord **createCoord**(int x1, int y1, int x2, int y2) 
 
-constexpr int **getCoordX1**(coord co) 
+constexpr int **getCoordX1**(Coord co) 
 
-constexpr int **getCoordX2**(coord co) 
+constexpr int **getCoordX2**(Coord co) 
 
-constexpr int **getCoordY1**(coord co) 
+constexpr int **getCoordY1**(Coord co) 
 
-constexpr int **getCoordY2**(coord co) 
+constexpr int **getCoordY2**(Coord co) 
 
-constexpr point **getFirstPointFromCoord(coord co)** 
+constexpr Point **getFirstPointFromCoord**(Coord co) 
 
-constexpr point **getSecondPointFromCoord(coord co)** 
+constexpr Point **getSecondPointFromCoord**(Coord co) 
 
-constexpr coord **createCoordFromPoints(point pt1, point pt2)** 
+constexpr Coord **createCoordFromPoints**(Point pt1, point pt2)
 
-constexpr point **createPoint(int x1, int y1)** 
+constexpr Point **createPoint**(int x1, int y1) 
 
-constexpr int **getPointX1(point pt)** 
+constexpr int **getPointX1**(Point pt) 
 
-constexpr int **getPointY1(point pt)**
+constexpr int **getPointY1**(Point pt)
 
-void **setRedColorElement**(pixel& px, float r) 
+void **setRedColorElement**(Pixel& px, float r) 
 
-void **setRedColorElement**(pixel& px, uint8_t r) 
+void **setRedColorElement**(Pixel& px, uint8_t r) 
 
-void **setGreenColorElement**(pixel& px, float g) 
+void **setGreenColorElement**(Pixel& px, float g) 
 
-void **setGreenColorElement**(pixel& px, uint8_t g) 
+void **setGreenColorElement**(Pixel& px, uint8_t g) 
 
-void **setBlueColorElement**(pixel& px, float b) 
+void **setBlueColorElement**(Pixel& px, float b) 
 
-void **setBlueColorElement**(pixel& px, uint8_t b)
+void **setBlueColorElement**(Pixel& px, uint8_t b)
 
 ### Helper functions for colors
-pixel **blendColors**(pixel &colorbackground, pixel &colorforeground, float alpha)
+Pixel **blendColors**(Pixel &colorbackground, Pixel &colorforeground, float alpha)
 
-void **getHSV**(double& h, double& s, double& v, const pixel& px)
+void **getHSV**(double& h, double& s, double& v, const Pixel& px)
 
-void **setHSV**(double h,double s,double v,pixel& px)
+void **setHSV**(double h,double s,double v,Pixel& px)
 
 ### Default constructor
 **Image**()
