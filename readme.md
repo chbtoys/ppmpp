@@ -153,67 +153,67 @@ friend bool **operator!=**(const Image& lhs, const Image& rhs)
 ### Public methods
 void **resize**(int width, int height) _// Resizes the image to the specified width and height._
 
-void **setWidth**(int width) // Sets the width of the image.
+void **setWidth**(int width) _// Sets the width of the image._
 
-void **setHeight**(int height) // Sets the height of the image.
+void **setHeight**(int height) _// Sets the height of the image._
 
-int **getWidth**() // Retrieves the current width of the image.
+int **getWidth**() _// Retrieves the current width of the image._
 
-int **getHeight**() // Retrieves the current height of the image.
+int **getHeight**() _// Retrieves the current height of the image._
 
-void **setPixel**(int xCoord, int yCoord, const Pixel& newPixel) // Sets the pixel at the given coordinates to the specified color.
+void **setPixel**(int xCoord, int yCoord, const Pixel& newPixel) _// Sets the pixel at the given coordinates to the specified color._
 
-const Pixel& **getPixel**(int xCoord, int yCoord) // Retrieves the pixel color at the given coordinates.
+const Pixel& **getPixel**(int xCoord, int yCoord) _// Retrieves the pixel color at the given coordinates._
 
-void **setAllPixels**(const Pixel& newPixel) // Sets all pixels in the image to the specified color.
+void **setAllPixels**(const Pixel& newPixel) _// Sets all pixels in the image to the specified color._
 
-void **drawLine**(Coord& startCoords, const Pixel& lineColor) // Draws a line between specified coordinates with the given color.
+void **drawLine**(Coord& startCoords, const Pixel& lineColor) _// Draws a line between specified coordinates with the given color._
 
-void **getAngledLine**(Coord& lineCoords, const Point& center, double degrees, int length) // Draws an angled line based on the center point, angle, and length.
+void **getAngledLine**(Coord& lineCoords, const Point& center, double degrees, int length) _// Draws an angled line based on the center point, angle, and length._
 
-void **drawBezierQuadratic**(const Point& pt0, const Point& pt1, const Point& pt2, int split, const Pixel& bezierColor) // Draws a quadratic Bezier curve based on three control points.
+void **drawBezierQuadratic**(const Point& pt0, const Point& pt1, const Point& pt2, int split, const Pixel& bezierColor) _// Draws a quadratic Bezier curve based on three control points._
 
-void **drawBezierCubic**(const Point& pt0, const Point& pt1, const Point& pt2, const Point& pt3, int split, const Pixel& bezierColor) // Draws a cubic Bezier curve based on four control points.
+void **drawBezierCubic**(const Point& pt0, const Point& pt1, const Point& pt2, const Point& pt3, int split, const Pixel& bezierColor) _// Draws a cubic Bezier curve based on four control points._
 
-void **drawRectangle**(const Point& xy, const Point& wh, const Pixel& rectangleColor) // Draws a rectangle defined by top-left corner and dimensions.
+void **drawRectangle**(const Point& xy, const Point& wh, const Pixel& rectangleColor) _// Draws a rectangle defined by top-left corner and dimensions._
 
-void **drawFilledRectangle**(const Point& xy, const Point& wh, const Pixel& rectangleColor) // Draws a filled rectangle defined by top-left corner and dimensions.
+void **drawFilledRectangle**(const Point& xy, const Point& wh, const Pixel& rectangleColor) _// Draws a filled rectangle defined by top-left corner and dimensions._
 
-void **drawCircle**(const Point& xy, int radius, const Pixel& circleColor) // Draws a circle defined by center point and radius.
+void **drawCircle**(const Point& xy, int radius, const Pixel& circleColor) _// Draws a circle defined by center point and radius._
 
-void **drawFilledCircle**(const Point& xy, int radius, const Pixel& circleColor) // Draws a filled circle defined by center point and radius.
+void **drawFilledCircle**(const Point& xy, int radius, const Pixel& circleColor) _// Draws a filled circle defined by center point and radius._
 
-void **drawWedge**(const Point& center, int radius, int startAngle, int endAngle, const Pixel& wedgeColor) // Draws a wedge within a circle defined by angles.
+void **drawWedge**(const Point& center, int radius, int startAngle, int endAngle, const Pixel& wedgeColor) _// Draws a wedge within a circle defined by angles._
 
-void **drawFilledWedge**(const Point& center, int radius, int startAngle, int endAngle, const Pixel& wedgeColor) // Draws a filled wedge within a circle defined by angles.
+void **drawFilledWedge**(const Point& center, int radius, int startAngle, int endAngle, const Pixel& wedgeColor) _// Draws a filled wedge within a circle defined by angles._
 
-void **drawTriangle**(const Point& pt1, const Point& pt2, const Point& pt3, const Pixel& triangleColor) // Draws a triangle defined by three vertices.
+void **drawTriangle**(const Point& pt1, const Point& pt2, const Point& pt3, const Pixel& triangleColor) _// Draws a triangle defined by three vertices._
 
-void **drawFilledTriangle**(const Point& pt1, const Point& pt2, const Point& pt3, const Pixel& fillColor) // Draws a filled triangle defined by three vertices.
+void **drawFilledTriangle**(const Point& pt1, const Point& pt2, const Point& pt3, const Pixel& fillColor) _// Draws a filled triangle defined by three vertices._
 
-void **drawRotatedRectangle**(int x, int y, int w, int h, double angle, const Pixel& px) // Draws a rotated rectangle at the given coordinates.
+void **drawRotatedRectangle**(int x, int y, int w, int h, double angle, const Pixel& px) _// Draws a rotated rectangle at the given coordinates._
 
-void **drawFilledRotatedRectangle**(int x, int y, int w, int h, double angle, const Pixel& px) // Draws a filled rotated rectangle at the given coordinates.
+void **drawFilledRotatedRectangle**(int x, int y, int w, int h, double angle, const Pixel& px) _// Draws a filled rotated rectangle at the given coordinates._
 
-void **drawRotatedEllipse**(int x, int y, int w, int h, double angle, const Pixel& px) // Draws a rotated ellipse at the given coordinates.
+void **drawRotatedEllipse**(int x, int y, int w, int h, double angle, const Pixel& px) _// Draws a rotated ellipse at the given coordinates._
 
-void **drawFilledRotatedEllipse**(int x, int y, int w, int h, double angle, const Pixel& px) // Draws a filled rotated ellipse at the given coordinates.
+void **drawFilledRotatedEllipse**(int x, int y, int w, int h, double angle, const Pixel& px) _// Draws a filled rotated ellipse at the given coordinates._
 
-void **drawRotatedPolygon**(const std::vector<Point>& vertices, double angle, const Pixel& px) // Draws a polygon with rotation at the given coordinates.
+void **drawRotatedPolygon**(const std::vector<Point>& vertices, double angle, const Pixel& px) _// Draws a polygon with rotation at the given coordinates._
 
-void **drawFilledRotatedPolygon**(const std::vector<Point>& vertices, double angle, const Pixel& px) // Draws a filled polygon with rotation at the given coordinates.
+void **drawFilledRotatedPolygon**(const std::vector<Point>& vertices, double angle, const Pixel& px) _// Draws a filled polygon with rotation at the given coordinates._
 
-Pixel **getAverageRgbOfImage**() // Returns the average RGB value of the entire image.
+Pixel **getAverageRgbOfImage**() _// Returns the average RGB value of the entire image._
 
-void **convertToGrayscale**() // Converts the image to grayscale.
+void **convertToGrayscale**() _// Converts the image to grayscale._
 
-void **applyGaussianBlur**() // Applies Gaussian blur to the image.
+void **applyGaussianBlur**() _// Applies Gaussian blur to the image._
 
-void **drawGradients**(const std::vector<Pixel>& colors, double angle_degree) // Draws gradient colors at a specified angle.
+void **drawGradients**(const std::vector<Pixel>& colors, double angle_degree) _// Draws gradient colors at a specified angle._
 
-void **read**(const std::string& filename) // Reads PPM P6 image from a file.
+void **read**(const std::string& filename) _// Reads PPM P6 image from a file._
 
-void **write**(const std::string& filename) // Writes PPM P6 image to a file.
+void **write**(const std::string& filename) _// Writes PPM P6 image to a file._
 
 
 ## License
