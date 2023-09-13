@@ -50,6 +50,142 @@ clang++ -std=c++20 test.cpp -o test
 ./test
 ```
 
+## Overview
+
+### Types
+using **pixel** = std::tuple<double, double, double>;
+using **coord** = std::tuple<int, int, int, int>;
+using **point** = std::tuple<int, int>;
+
+### Helper functions
+constexpr float **getFloatColorElement**(uint8_t element)
+constexpr float **getfRedColorElement**(pixel px) 
+constexpr uint8_t **getRedColorElement**(pixel px) 
+constexpr float **getfGreenColorElement**(pixel px) 
+constexpr uint8_t **getGreenColorElement**(pixel px) 
+constexpr float **getfBlueColorElement**(pixel px) 
+constexpr uint8_t **getBlueColorElement**(pixel px)
+constexpr pixel **createfPixelWithColor**(float r, float g, float b)
+constexpr pixel **createPixelWithColor**(uint8_t r, uint8_t g, uint8_t b) 
+constexpr pixel **createfGrayPixel**(float v) 
+constexpr pixel **createGrayPixel**(uint8_t v)
+constexpr coord **createCoord**(int x1, int y1, int x2, int y2) 
+constexpr int **getCoordX1**(coord co) 
+constexpr int **getCoordX2**(coord co) 
+constexpr int **getCoordY1**(coord co) 
+constexpr int **getCoordY2**(coord co) 
+constexpr point **getFirstPointFromCoord(coord co)** 
+constexpr point **getSecondPointFromCoord(coord co)** 
+constexpr coord **createCoordFromPoints(point pt1, point pt2)** 
+constexpr point **createPoint(int x1, int y1)** 
+constexpr int **getPointX1(point pt)** 
+constexpr int **getPointY1(point pt)**
+
+void **setRedColorElement**(pixel& px, float r) 
+void **setRedColorElement**(pixel& px, uint8_t r) 
+void **setGreenColorElement**(pixel& px, float g) 
+void **setGreenColorElement**(pixel& px, uint8_t g) 
+void **setBlueColorElement**(pixel& px, float b) 
+void **setBlueColorElement**(pixel& px, uint8_t b)
+
+### Helper functions for colors
+pixel **blendColors**(pixel &colorbackground, pixel &colorforeground, float alpha)
+void **getHSV**(double& h, double& s, double& v, const pixel& px)
+void **setHSV**(double h,double s,double v,pixel& px)
+
+### Default constructor
+**Image**()
+
+### Parameterized constructor
+**Image**(int width, int height)
+
+### Parameterized constructor
+explicit **Image**(std::string const& filename)
+
+### Copy constructor
+**Image**(const Image& other)
+
+### Copy assignment operator
+Image& **operator=**(const Image& other)
+
+### Move constructor
+**Image**(Image&& other) noexcept
+
+### Move assignment operator
+Image& **operator=**(Image&& other) noexcept
+
+### Equality comparison operator
+friend bool **operator==**(const Image& lhs, const Image& rhs)
+
+### Inequality comparison operator
+friend bool **operator!=**(const Image& lhs, const Image& rhs)
+
+### Public methods
+void **resize**(int width, int height) // Resizes the image to the specified width and height.
+
+void **setWidth**(int width) // Sets the width of the image.
+
+void **setHeight**(int height) // Sets the height of the image.
+
+int **getWidth**() // Retrieves the current width of the image.
+
+int **getHeight**() // Retrieves the current height of the image.
+
+void **setPixel**(int xCoord, int yCoord, const Pixel& newPixel) // Sets the pixel at the given coordinates to the specified color.
+
+const Pixel& **getPixel**(int xCoord, int yCoord) // Retrieves the pixel color at the given coordinates.
+
+void **setAllPixels**(const Pixel& newPixel) // Sets all pixels in the image to the specified color.
+
+void **drawLine**(Coord& startCoords, const Pixel& lineColor) // Draws a line between specified coordinates with the given color.
+
+void **getAngledLine**(Coord& lineCoords, const Point& center, double degrees, int length) // Draws an angled line based on the center point, angle, and length.
+
+void **drawBezierQuadratic**(const Point& pt0, const Point& pt1, const Point& pt2, int split, const Pixel& bezierColor) // Draws a quadratic Bezier curve based on three control points.
+
+void **drawBezierCubic**(const Point& pt0, const Point& pt1, const Point& pt2, const Point& pt3, int split, const Pixel& bezierColor) // Draws a cubic Bezier curve based on four control points.
+
+void **drawRectangle**(const Point& xy, const Point& wh, const Pixel& rectangleColor) // Draws a rectangle defined by top-left corner and dimensions.
+
+void **drawFilledRectangle**(const Point& xy, const Point& wh, const Pixel& rectangleColor) // Draws a filled rectangle defined by top-left corner and dimensions.
+
+void **drawCircle**(const Point& xy, int radius, const Pixel& circleColor) // Draws a circle defined by center point and radius.
+
+void **drawFilledCircle**(const Point& xy, int radius, const Pixel& circleColor) // Draws a filled circle defined by center point and radius.
+
+void **drawWedge**(const Point& center, int radius, int startAngle, int endAngle, const Pixel& wedgeColor) // Draws a wedge within a circle defined by angles.
+
+void **drawFilledWedge**(const Point& center, int radius, int startAngle, int endAngle, const Pixel& wedgeColor) // Draws a filled wedge within a circle defined by angles.
+
+void **drawTriangle**(const Point& pt1, const Point& pt2, const Point& pt3, const Pixel& triangleColor) // Draws a triangle defined by three vertices.
+
+void **drawFilledTriangle**(const Point& pt1, const Point& pt2, const Point& pt3, const Pixel& fillColor) // Draws a filled triangle defined by three vertices.
+
+void **drawRotatedRectangle**(int x, int y, int w, int h, double angle, const Pixel& px) // Draws a rotated rectangle at the given coordinates.
+
+void **drawFilledRotatedRectangle**(int x, int y, int w, int h, double angle, const Pixel& px) // Draws a filled rotated rectangle at the given coordinates.
+
+void **drawRotatedEllipse**(int x, int y, int w, int h, double angle, const Pixel& px) // Draws a rotated ellipse at the given coordinates.
+
+void **drawFilledRotatedEllipse**(int x, int y, int w, int h, double angle, const Pixel& px) // Draws a filled rotated ellipse at the given coordinates.
+
+void **drawRotatedPolygon**(const std::vector<Point>& vertices, double angle, const Pixel& px) // Draws a polygon with rotation at the given coordinates.
+
+void **drawFilledRotatedPolygon**(const std::vector<Point>& vertices, double angle, const Pixel& px) // Draws a filled polygon with rotation at the given coordinates.
+
+Pixel **getAverageRgbOfImage**() // Returns the average RGB value of the entire image.
+
+void **convertToGrayscale**() // Converts the image to grayscale.
+
+void **applyGaussianBlur**() // Applies Gaussian blur to the image.
+
+void **drawGradients**(const std::vector<Pixel>& colors, double angle_degree) // Draws gradient colors at a specified angle.
+
+void **read**(const std::string& filename) // Reads PPM P6 image from a file.
+
+void **write**(const std::string& filename) // Writes PPM P6 image to a file.
+
+
 ## License
 
 MIT No Attribution
