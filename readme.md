@@ -50,8 +50,6 @@ clang++ -std=c++20 test.cpp -o test
 ./test
 ```
 
-NOTE: Uses **-std=c++20** for std::lerp when making bezier quadratic and cubic. Everything else works great with **-std=c++17**.
-
 ## License
 
 MIT No Attribution
