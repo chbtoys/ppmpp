@@ -1,7 +1,7 @@
 // MIT No Attribution
 // 
 // ppmpp2.hpp - A header-only class to draw/read/write 2D graphics using only the standard library.
-// Version 2.0 (13:th of September 2023).
+// Version 2.0 (8:th of October 2023).
 // Copyright (c) 2022-2023 Håkan Blomqvist
 // 
 // For more information:
@@ -103,13 +103,10 @@ namespace ppm
 
         friend bool operator==(const Image& lhs, const Image& rhs)
         {
-            // Compare the dimensions
             if (lhs.m_width != rhs.m_width || lhs.m_height != rhs.m_height)
             {
                 return false;
             }
-            
-            // Compare the pixel data
             return lhs.m_img == rhs.m_img;
         }
 
@@ -157,6 +154,16 @@ namespace ppm
 					setPixel(x,y,newPixel);
 				}
 			}
+		}
+
+		void setImage(std::vector<Pixel>& image, int& width, int& height) {
+		    m_img = image;
+		    m_width=width;
+		    m_height=height;
+		}
+
+		std::vector<Pixel> getImage() {
+		    return m_img;
 		}
 		
 		void drawLine(Coord& startCoords, const Pixel& lineColor) {
