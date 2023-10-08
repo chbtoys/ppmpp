@@ -165,6 +165,10 @@ const Pixel& **getPixel**(int xCoord, int yCoord) _// Retrieves the pixel color 
 
 void **setAllPixels**(const Pixel& newPixel) _// Sets all pixels in the image to the specified color._
 
+void **setImage**(std::vector<Pixel>& image, int& width, int& height) _// Sets image to m_img. m_width=width and m_height=height._ 
+
+std::vector<Pixel> **getImage**() _// Returns m_img._
+
 void **drawLine**(Coord& startCoords, const Pixel& lineColor) _// Draws a line between specified coordinates with the given color._
 
 void **getAngledLine**(Coord& lineCoords, const Point& center, double degrees, int length) _// Draws an angled line based on the center point, angle, and length._
