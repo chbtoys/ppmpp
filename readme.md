@@ -211,6 +211,16 @@ void **convertToGrayscale**() _// Converts the image to grayscale._
 
 void **applyGaussianBlur**() _// Applies Gaussian blur to the image._
 
+void **applyAntiAliasing**() _// Applies Anti-Aliasing to the image._
+
+void **downscale**(int width, int height) _// Downscale m_img to width and height._
+
+void **upscale**(int scale) _// Upscale m_img to scaleFactor._
+
+void **applyBloom**(double threshold, double sigma) _// Applies Bloom Effect to m_img._
+
+void **applyLens**(int numb) _// Applies numb Lens effects to m_img._
+
 void **drawGradients**(const std::vector<Pixel>& colors, double angle_degree) _// Draws gradient colors at a specified angle._
 
 void **read**(const std::string& filename) _// Reads PPM P6 image from a file._
