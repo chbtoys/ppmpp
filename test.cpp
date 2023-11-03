@@ -124,5 +124,27 @@ int main()
 	image.read("blur2_0.ppm");
 	if (image == image2) {std::cout<<"Error: if (image == image2)\n";}
 
+	// Effects
+	image.read("test2_2.ppm");
+	std::cout << "image.applyAntiAliasing();" << std::endl;
+	image.applyAntiAliasing();
+	image.write("test2_2AA.ppm");
+	image.read("blur2_0.ppm");
+	std::cout << "image.applyBloom(0.8,2.0);" << std::endl;
+	image.applyBloom(0.8,2.0);
+	image.write("blur2_0Bloom.ppm");
+	image.read("blur2_0.ppm");
+	std::cout << "image.applyLens(5);" << std::endl;
+	image.applyLens(5);
+	image.write("blur2_0Lens.ppm");
+	image.read("blur2_0.ppm");
+	std::cout << "image.upscale(2);" << std::endl;
+	image.upscale(2);
+	image.write("blur2_0upscale.ppm");
+	image.read("blur2_0.ppm");
+	std::cout << "image.downscale(image.getWidth()/2,image.getHeight()/2);" << std::endl;
+	image.downscale(image.getWidth()/2,image.getHeight()/2);
+	image.write("blur2_0downscale.ppm");
+
 	return 0;
 }
