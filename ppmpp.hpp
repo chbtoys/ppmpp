@@ -1,7 +1,7 @@
 // MIT No Attribution
 // 
-// ppmpp2.hpp - A header-only class to draw/read/write 2D graphics using only the standard library.
-// Version 2.0 (8:th of October 2023).
+// ppmpp.hpp - A header-only class to draw/read/write 2D graphics using only the standard library.
+// Version (3:rd of November 2023).
 // Copyright (c) 2022-2023 Håkan Blomqvist
 // 
 // For more information:
@@ -268,6 +268,26 @@ namespace ppm
 		void applyGaussianBlur() {
 	        applyGaussianBlurImpl();
 	    }
+
+	    void applyAntiAliasing() {
+            applyAntiAliasingImpl();
+        }
+
+        void downscale(int width, int height) {
+        	downscaleImpl(width,height);
+        }
+
+        void upscale(int scale) {
+        	upscaleImpl(scale);
+        }
+
+        void applyBloom(double threshold, double sigma) {
+        	applyBloomImpl(threshold, sigma);
+        }
+
+        void applyLens(int numb) {
+        	applyLensImpl(numb);
+        }
 
 		void drawGradients(const std::vector<Pixel>& colors, double angle_degree) {
 			drawGradientsImpl(colors, angle_degree);
@@ -987,6 +1007,235 @@ namespace ppm
 	            }
 	        }
 	    }
+
+	    double cubicWeightImpl(double distance) {
+		    // The cubic convolution function (you can change the coefficient -0.5 to -1 or -2 for sharper or softer interpolation)
+		    const double a = -0.5; 
+
+		    double absDistance = std::abs(distance);
+		    double absDistanceSquared = absDistance * absDistance;
+		    double absDistanceCubed = absDistanceSquared * absDistance;
+
+		    if (absDistance <= 1.0) {
+		        return (a + 2.0) * absDistanceCubed - (a + 3.0) * absDistanceSquared + 1.0;
+		    } else if (absDistance <= 2.0) {
+		        return a * absDistanceCubed - 5.0 * a * absDistanceSquared + 8.0 * a * absDistance - 4.0 * a;
+		    } else {
+		        return 0.0;
+		    }
+		}
+
+		Pixel bicubicInterpolateImpl(const std::vector<Pixel>& image, double x, double y, int originalWidth, int originalHeight) {
+	        int fx = static_cast<int>(std::floor(x));
+	        int fy = static_cast<int>(std::floor(y));
+	        Pixel result(0.0, 0.0, 0.0);
+
+	        for (int m = -1; m <= 2; ++m) {
+	            for (int n = -1; n <= 2; ++n) {
+	                // Safely get pixel color (clamp or wrap based on your need)
+	                Pixel sample = image[std::clamp(fy + m, 0, originalHeight - 1) * originalWidth + std::clamp(fx + n, 0, originalWidth - 1)];
+	                double weight = cubicWeightImpl(x - (fx + n)) * cubicWeightImpl(y - (fy + m));
+
+	                std::get<0>(result) += weight * std::get<0>(sample);
+	                std::get<1>(result) += weight * std::get<1>(sample);
+	                std::get<2>(result) += weight * std::get<2>(sample);
+	            }
+	        }
+
+	        return result;
+	    }
+
+	    void upscaleImpl(int scale) {
+	        // Calculate new dimensions
+		    int newWidth = m_width * scale;
+		    int newHeight = m_height * scale;
+		    std::vector<Pixel> newImg(newWidth * newHeight, Pixel(0,0,0)); // Initialize upscaled image with black pixels
+
+		    // Iterate over new image pixels and assign bicubic interpolated values from old image
+		    for (int y = 0; y < newHeight; ++y) {
+		        for (int x = 0; x < newWidth; ++x) {
+		            // Calculate the position on the original image
+		            double origX = static_cast<double>(x) / static_cast<double>(scale);
+		            double origY = static_cast<double>(y) / static_cast<double>(scale);
+
+		            // Bicubic interpolate pixel from original image
+		            newImg[y * newWidth + x] = bicubicInterpolateImpl(m_img, origX, origY, m_width, m_height);
+		        }
+		    }
+
+		    // Replace current image with the upscaled image
+		    m_img = std::move(newImg);
+		    m_width = newWidth;
+		    m_height = newHeight;
+	    }
+
+	    void downscaleImpl(int width, int height) {
+	        // Calculate the scale assuming the upscale and downscale factors are the same
+	        int scale = m_width / width;
+
+	        // New image data
+	        std::vector<Pixel> newImg(width * height);
+
+	        // Averaging blocks of pixels
+	        for (int y = 0; y < height; ++y) {
+	            for (int x = 0; x < width; ++x) {
+	                double sumR = 0.0, sumG = 0.0, sumB = 0.0;
+
+	                // Average the colors of the `scale`x`scale` block
+	                for (int dy = 0; dy < scale; ++dy) {
+	                    for (int dx = 0; dx < scale; ++dx) {
+	                        Pixel p = m_img[(y * scale + dy) * m_width + (x * scale + dx)];
+	                        sumR += std::get<0>(p);
+	                        sumG += std::get<1>(p);
+	                        sumB += std::get<2>(p);
+	                    }
+	                }
+
+	                // Calculate the average color
+	                double numPixels = scale * scale;
+	                newImg[y * width + x] = {
+	                    sumR / numPixels,
+	                    sumG / numPixels,
+	                    sumB / numPixels
+	                };
+	            }
+	        }
+
+	        // Set the downscaled image as the current image
+	        m_img.swap(newImg);
+	        m_width = width;
+	        m_height = height;
+	    }
+
+	    void applyAntiAliasingImpl() {
+            int width=m_width;
+            int height=m_height;
+            int upscaleFactor = 4;
+            upscaleImpl(upscaleFactor);
+            applyGaussianBlurImpl();
+            downscaleImpl(width,height);
+        }
+
+        void applyBloomImpl(double threshold, double sigma) {
+            // Lambda function for Gaussian blur
+            auto applyGaussianBlur = [&](std::vector<Pixel>& img) {
+                int kernelSize = static_cast<int>(std::round(sigma * 6)) + 1;
+                std::vector<double> kernel(kernelSize);
+                double sigma2 = 2 * sigma * sigma;
+                double sum = 0.0;
+
+                // Generate Gaussian kernel
+                for (int i = 0; i < kernelSize; ++i) {
+                    int x = i - kernelSize / 2;
+                    kernel[i] = std::exp(-(x * x) / sigma2);
+                    sum += kernel[i];
+                }
+
+                // Normalize the kernel
+                for (double &value : kernel) {
+                    value /= sum;
+                }
+
+                // Apply Gaussian blur horizontally
+                std::vector<Pixel> blurred(m_img.size());
+                for (int y = 0; y < m_height; ++y) {
+                    for (int x = 0; x < m_width; ++x) {
+                        double red = 0.0, green = 0.0, blue = 0.0;
+                        for (int k = 0; k < kernelSize; ++k) {
+                            int pixelPosX = x + k - kernelSize / 2;
+                            if (pixelPosX < 0) pixelPosX = 0;
+                            if (pixelPosX >= m_width) pixelPosX = m_width - 1;
+
+                            Pixel &p = img[pixelPosX + y * m_width];
+                            red += std::get<0>(p) * kernel[k];
+                            green += std::get<1>(p) * kernel[k];
+                            blue += std::get<2>(p) * kernel[k];
+                        }
+                        blurred[x + y * m_width] = Pixel(red, green, blue);
+                    }
+                }
+
+                // Apply Gaussian blur vertically
+                for (int y = 0; y < m_height; ++y) {
+                    for (int x = 0; x < m_width; ++x) {
+                        double red = 0.0, green = 0.0, blue = 0.0;
+                        for (int k = 0; k < kernelSize; ++k) {
+                            int pixelPosY = y + k - kernelSize / 2;
+                            if (pixelPosY < 0) pixelPosY = 0;
+                            if (pixelPosY >= m_height) pixelPosY = m_height - 1;
+
+                            Pixel &p = blurred[x + pixelPosY * m_width];
+                            red += std::get<0>(p) * kernel[k];
+                            green += std::get<1>(p) * kernel[k];
+                            blue += std::get<2>(p) * kernel[k];
+                        }
+                        img[x + y * m_width] = Pixel(red, green, blue);
+                    }
+                }
+            };
+
+            std::vector<Pixel> brightPass(m_img.begin(), m_img.end());
+            for (Pixel& pixel : brightPass) {
+                double brightness = 0.2126 * std::get<0>(pixel) + 0.7152 * std::get<1>(pixel) + 0.0722 * std::get<2>(pixel);
+                if (brightness <= threshold) {
+                    pixel = Pixel(0, 0, 0);
+                }
+            }
+
+            applyGaussianBlur(brightPass);
+
+            for (size_t i = 0; i < m_img.size(); ++i) {
+                double br, bg, bb;
+                std::tie(br, bg, bb) = brightPass[i];
+
+                double r, g, b;
+                std::tie(r, g, b) = m_img[i];
+
+                m_img[i] = Pixel(
+                    std::min(r + br, 1.0),
+                    std::min(g + bg, 1.0),
+                    std::min(b + bb, 1.0)
+                );
+            }
+        }
+
+        void applyLensImpl(int numb) {
+            int lensRadius = m_width / 10; // Example radius for each lens
+            double refractionIndex = 1.5; // Index of refraction for the lens material
+
+            std::random_device rd;
+            std::mt19937 gen(rd());
+
+            std::uniform_int_distribution<> disWidth(0, m_width - 1);
+            std::uniform_int_distribution<> disHeight(0, m_height - 1);
+
+            for (int i = 0; i < numb; ++i) {
+                int centerX = disWidth(gen);
+                int centerY = disHeight(gen);
+
+                for (int y = -lensRadius; y <= lensRadius; ++y) {
+                    for (int x = -lensRadius; x <= lensRadius; ++x) {
+                        if (x * x + y * y <= lensRadius * lensRadius) {
+                            double dist = std::sqrt(x * x + y * y);
+                            double distRatio = dist / lensRadius;
+                            double theta = std::atan2(y, x);
+                            double refraction = 1.0 - std::sqrt(1.0 - std::pow(refractionIndex - 1.0, 2)) / refractionIndex;
+                            double newDist = distRatio * dist * refraction;
+
+                            int srcX = static_cast<int>(centerX + newDist * std::cos(theta));
+                            int srcY = static_cast<int>(centerY + newDist * std::sin(theta));
+
+                            srcX = std::clamp(srcX, 0, m_width - 1);
+                            srcY = std::clamp(srcY, 0, m_height - 1);
+
+                            Pixel& srcPixel = m_img[srcX + srcY * m_width];
+
+                            setPixel(centerX + x, centerY + y, srcPixel);
+                        }
+                    }
+                }
+            }
+        }
 
 	    void drawGradientsImpl(const std::vector<Pixel>& colors, double angle_degree) {
 	        double angle = angle_degree * M_PI / 180.0;
