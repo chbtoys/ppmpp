@@ -1,7 +1,7 @@
 // MIT No Attribution
 // 
 // ppmpp.hpp - A header-only class to draw/read/write 2D graphics using only the standard library.
-// Version (3:rd of November 2023).
+// Version (4:th of November 2023).
 // Copyright (c) 2022-2023 Håkan Blomqvist
 // 
 // For more information:
@@ -1042,6 +1042,11 @@ namespace ppm
 	            }
 	        }
 
+	         // Clamp the result to the valid pixel value range (0.0 to 1.0)
+		    std::get<0>(result) = std::clamp(std::get<0>(result), 0.0, 1.0);
+		    std::get<1>(result) = std::clamp(std::get<1>(result), 0.0, 1.0);
+		    std::get<2>(result) = std::clamp(std::get<2>(result), 0.0, 1.0);
+
 	        return result;
 	    }
 
@@ -1118,7 +1123,7 @@ namespace ppm
 
         void applyBloomImpl(double threshold, double sigma) {
             // Lambda function for Gaussian blur
-            auto applyGaussianBlur = [&](std::vector<Pixel>& img) {
+            auto gaussianBlur = [&](std::vector<Pixel>& img) {
                 int kernelSize = static_cast<int>(std::round(sigma * 6)) + 1;
                 std::vector<double> kernel(kernelSize);
                 double sigma2 = 2 * sigma * sigma;
@@ -1182,7 +1187,7 @@ namespace ppm
                 }
             }
 
-            applyGaussianBlur(brightPass);
+            gaussianBlur(brightPass);
 
             for (size_t i = 0; i < m_img.size(); ++i) {
                 double br, bg, bb;
