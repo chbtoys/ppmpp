@@ -1,7 +1,7 @@
 // MIT No Attribution
 // 
 // ppmpp.hpp - A header-only class to draw/read/write 2D graphics using only the standard library.
-// Version (4:th of November 2023).
+// Version (15:th of November 2023).
 // Copyright (c) 2022-2023 Håkan Blomqvist
 // 
 // For more information:
@@ -157,6 +157,7 @@ namespace ppm
 		}
 
 		void setImage(std::vector<Pixel>& image, int& width, int& height) {
+			m_img.clear();
 		    m_img = image;
 		    m_width=width;
 		    m_height=height;
@@ -462,26 +463,26 @@ namespace ppm
 		    double t = 0.0;
 		    double delta = 1.0 / static_cast<double>(split);
 
-		    for (int i = 0; i < split; ++i) {
+		    for (int i = 0; i <= split; ++i) {  // Changed condition to include the final point
 		        auto [x0, y0] = pt0;
 		        auto [x1, y1] = pt1;
 		        auto [x2, y2] = pt2;
 		        auto [x3, y3] = pt3;
 
-		        int xA = std::lerp(x0, x1, t);
-		        int yA = std::lerp(y0, y1, t);
-		        int xB = std::lerp(x1, x2, t);
-		        int yB = std::lerp(y1, y2, t);
-		        int xC = std::lerp(x2, x3, t);
-		        int yC = std::lerp(y2, y3, t);
+		        double xA = std::lerp(x0, x1, t);  // Changed type to double
+		        double yA = std::lerp(y0, y1, t);
+		        double xB = std::lerp(x1, x2, t);
+		        double yB = std::lerp(y1, y2, t);
+		        double xC = std::lerp(x2, x3, t);
+		        double yC = std::lerp(y2, y3, t);
 
-		        int xAA = std::lerp(xA, xB, t);
-		        int yAA = std::lerp(yA, yB, t);
-		        int xBB = std::lerp(xB, xC, t);
-		        int yBB = std::lerp(yB, yC, t);
+		        double xAA = std::lerp(xA, xB, t);
+		        double yAA = std::lerp(yA, yB, t);
+		        double xBB = std::lerp(xB, xC, t);
+		        double yBB = std::lerp(yB, yC, t);
 
-		        int xFinal = std::lerp(xAA, xBB, t);
-		        int yFinal = std::lerp(yAA, yBB, t);
+		        int xFinal = static_cast<int>(std::lerp(xAA, xBB, t));  // Cast back to int
+		        int yFinal = static_cast<int>(std::lerp(yAA, yBB, t));
 
 		        xyCoordinates.push_back(std::make_tuple(xFinal, yFinal));
 		        t += delta;
@@ -971,16 +972,19 @@ namespace ppm
 		    }
 		}
 
+		bool isGrayscaleRGBImpl(double r, double g, double b) {
+		    return r == g && g == b;
+		}
+
 	    void convertToGrayscaleImpl() {
-	        for (int y = 0; y < m_height; ++y) {
-	            for (int x = 0; x < m_width; ++x) {
-	                Pixel& px = m_img[getIndex(x, y)];
-	                auto [red, green, blue] = px;
-	                double gray = 0.299 * red + 0.587 * green + 0.114 * blue;
-	                m_img[getIndex(x, y)] = {gray, gray, gray};
-	            }
+	        for (auto& pixel : m_img) {
+	            auto& [r, g, b] = pixel;
+	            if (!isGrayscaleRGBImpl(r,g,b)) {
+	            	double gray = 0.299 * r + 0.587 * g + 0.114 * b;
+	            	pixel = {gray, gray, gray};
+	        	}
 	        }
-	    }
+		}
 
 	    void applyGaussianBlurImpl() {
 	        std::array<std::array<double, 3>, 3> kernel = {{
