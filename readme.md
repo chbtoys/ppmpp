@@ -5,9 +5,10 @@
 Draw/read/write PPM P6 images (Portable Pixel Map) without any hassle.
 
 Created by Håkan Blomqvist
-Part of the book: https://leanpub.com/2dcomputergraphicsinmoderncandstandardlibrary/
 
 ![Book: 2D Computer Graphics in Modern C++ and Standard Library](https://github.com/chbtoys/ppmpp/blob/main/images/s_featured.png)
+
+As a part of the book: https://leanpub.com/2dcomputergraphicsinmoderncandstandardlibrary/
 
 ## Example
 ```
