@@ -1,11 +1,12 @@
 # ppmpp.hpp - C++ header-only draw/read/write 2D graphics using the standard library only.
 
+![ppmpp](https://github.com/chbtoys/ppmpp/blob/main/images/ppmpp.png)
+
 Draw/read/write PPM P6 images (Portable Pixel Map) without any hassle.
 
 Created by Håkan Blomqvist
 Part of the book: https://leanpub.com/2dcomputergraphicsinmoderncandstandardlibrary/
-
-![ppmpp](https://github.com/chbtoys/ppmpp/blob/main/images/ppmpp.png)
+![Book: 2D Computer Graphics in Modern C++ and Standard Library](https://github.com/chbtoys/ppmpp/blob/main/images/s_featured.png)
 
 ## Example
 ```
