@@ -10,7 +10,7 @@ Created by Håkan Blomqvist
 
 As a part of the book: https://leanpub.com/2dcomputergraphicsinmoderncandstandardlibrary/
 
-![Libro: Gráficos de Computadora 2D en C++ Moderno y Biblioteca Estándar](https://github.com/chbtoys/ppmpp/blob/main/images/s_featured_spanish.jpg)
+![Libro: Gráficos de Computadora 2D en C++ Moderno y Biblioteca Estándar](https://github.com/chbtoys/ppmpp/blob/main/images/s_featured_spanish.png)
 
 Como parte del libro: https://leanpub.com/graficosdecomputadora2dencppmodernoybibliotecaestandar
 
