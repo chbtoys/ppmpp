@@ -14,6 +14,10 @@ As a part of the book: https://leanpub.com/2dcomputergraphicsinmoderncandstandar
 
 Como parte del libro: https://leanpub.com/graficosdecomputadora2dencppmodernoybibliotecaestandar
 
+![Buch: 2D-Computergrafik in modernem C++ und Standardbibliothek](https://github.com/chbtoys/ppmpp/blob/main/images/s_featured_german.png)
+
+Als Teil des Buches: https://leanpub.com/2d-computergrafikinmodernemcundstandardbibliothek/
+
 ## Example
 ```
 // Compile: clear && clang++ -std=c++20 example.cpp -o example
