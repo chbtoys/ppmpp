@@ -22,6 +22,10 @@ Als Teil des Buches: https://leanpub.com/2d-computergrafikinmodernemcundstandard
 
 Comme faisant partie du livre: https://leanpub.com/graphiquesinformatiques2dencmoderneetbibliothquestandard/
 
+![Il libro: Grafica Informatica 2D in C++ Moderno e Libreria Standard](https://github.com/chbtoys/ppmpp/blob/main/images/s_featured_italian.png)
+
+Come parte del libro: https://leanpub.com/graficacomputerizzata2dincmodernoelibreriastandard/
+
 ## Example
 ```
 // Compile: clear && clang++ -std=c++20 example.cpp -o example
